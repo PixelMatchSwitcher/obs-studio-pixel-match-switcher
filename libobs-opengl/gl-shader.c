@@ -463,7 +463,8 @@ static void program_set_param_data(struct gs_program *program,
 	void *array = pp->param->cur_value.array;
 
 	if (pp->param->type == GS_SHADER_PARAM_BOOL ||
-	    pp->param->type == GS_SHADER_PARAM_INT) {
+		pp->param->type == GS_SHADER_PARAM_INT ||
+		pp->param->type == GS_SHADER_PARAM_UINT) {
 		if (validate_param(pp, sizeof(int))) {
 			glUniform1iv(pp->obj, 1, (int *)array);
 			gl_success("glUniform1iv");
@@ -733,6 +734,7 @@ void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 		break;
 	case GS_SHADER_PARAM_BOOL:
 	case GS_SHADER_PARAM_INT:
+	case GS_SHADER_PARAM_UINT:
 		expected_size = sizeof(int);
 		break;
 	case GS_SHADER_PARAM_INT2:

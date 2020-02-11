@@ -140,6 +140,7 @@ void gs_shader::BuildConstantBuffer()
 		switch (param.type) {
 		case GS_SHADER_PARAM_BOOL:
 		case GS_SHADER_PARAM_INT:
+                case GS_SHADER_PARAM_UINT:
 		case GS_SHADER_PARAM_FLOAT:
 			size = sizeof(float);
 			break;

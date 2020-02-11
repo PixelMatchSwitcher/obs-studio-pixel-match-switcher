@@ -285,6 +285,7 @@ enum gs_shader_param_type {
 	GS_SHADER_PARAM_BOOL,
 	GS_SHADER_PARAM_FLOAT,
 	GS_SHADER_PARAM_INT,
+	GS_SHADER_PARAM_UINT,
 	GS_SHADER_PARAM_STRING,
 	GS_SHADER_PARAM_VEC2,
 	GS_SHADER_PARAM_VEC3,
@@ -335,6 +336,7 @@ EXPORT void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size);
 EXPORT void gs_shader_set_default(gs_sparam_t *param);
 EXPORT void gs_shader_set_next_sampler(gs_sparam_t *param,
 				       gs_samplerstate_t *sampler);
+EXPORT uint32_t gs_shader_get_uint(gs_sparam_t *param);
 #endif
 
 /* ---------------------------------------------------
