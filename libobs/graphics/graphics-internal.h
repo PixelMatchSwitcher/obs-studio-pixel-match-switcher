@@ -246,6 +246,7 @@ struct gs_exports {
 	void (*gs_shader_set_bool)(gs_sparam_t *param, bool val);
 	void (*gs_shader_set_float)(gs_sparam_t *param, float val);
 	void (*gs_shader_set_int)(gs_sparam_t *param, int val);
+	void (*gs_shader_set_uint)(gs_sparam_t *param, unsigned int val);
 	void (*gs_shader_set_matrix3)(gs_sparam_t *param,
 				      const struct matrix3 *val);
 	void (*gs_shader_set_matrix4)(gs_sparam_t *param,

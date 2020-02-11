@@ -2144,6 +2144,16 @@ void gs_shader_set_int(gs_sparam_t *param, int val)
 	graphics->exports.gs_shader_set_int(param, val);
 }
 
+void gs_shader_set_uint(gs_sparam_t *param, unsigned int val)
+{
+	graphics_t *graphics = thread_graphics;
+
+	if (!gs_valid_p("gs_shader_set_uint", param))
+		return;
+
+	graphics->exports.gs_shader_set_uint(param, val);
+}
+
 void gs_shader_set_matrix3(gs_sparam_t *param, const struct matrix3 *val)
 {
 	graphics_t *graphics = thread_graphics;
