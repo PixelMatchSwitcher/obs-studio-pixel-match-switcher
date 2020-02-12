@@ -462,6 +462,21 @@ static inline bool validate_param(struct program_param *pp,
 	return true;
 }
 
+static inline bool validate_result(struct program_result *pr,
+				   size_t expected_size)
+{
+	if(pr->result->cur_value.num != expected_size) {
+		blog(LOG_ERROR,
+		     "Result '%s' set to invalid size %u, "
+		     "expected %u",
+		     pr->result->name, (unsigned int)pr->result->cur_value.num,
+		     (unsigned int)expected_size);
+		return false;
+	}
+
+	return true;
+}
+
 static void program_set_param_data(struct gs_program *program,
 				   struct program_param *pp)
 {
@@ -546,6 +561,26 @@ void program_update_params(struct gs_program *program)
 	for (size_t i = 0; i < program->params.num; i++) {
 		struct program_param *pp = program->params.array + i;
 		program_set_param_data(program, pp);
+	}
+}
+
+static void program_get_result_data(struct gs_program *program,
+				    struct program_result *pr)
+{
+	void *array = pr->result->cur_value.array;
+	if(pr->result->type == GS_SHADER_RESULT_ATOMIC_UINT) {
+		if(validate_result(pr, sizeof(unsigned int))) {
+			// TODO
+		}
+	}
+
+}
+
+void program_get_results(struct gs_program *program)
+{
+	for (size_t i = 0; i < program->params.num; i++) {
+		struct program_result *pr = program->results.array + i;
+		program_get_result_data(program, pr);
 	}
 }
 
