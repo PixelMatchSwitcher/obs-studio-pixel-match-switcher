@@ -182,6 +182,7 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(gs_shader_set_vec3);
 	GRAPHICS_IMPORT(gs_shader_set_vec4);
 	GRAPHICS_IMPORT(gs_shader_set_texture);
+	GRAPHICS_IMPORT(gs_shader_set_atomic_uint);
 	GRAPHICS_IMPORT(gs_shader_set_val);
 	GRAPHICS_IMPORT(gs_shader_set_default);
 	GRAPHICS_IMPORT(gs_shader_set_next_sampler);

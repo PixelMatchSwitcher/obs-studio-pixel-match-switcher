@@ -409,11 +409,6 @@ void gs_shader_set_int(gs_sparam_t *param, int val)
 	da_copy_array(param->cur_value, &val, sizeof(val));
 }
 
-void gs_shader_set_uint(gs_sparam_t *param, unsigned int val)
-{
-	da_copy_array(param->cur_value, &val, sizeof(val));
-}
-
 void gs_shader_set_matrix3(gs_sparam_t *param, const struct matrix3 *val)
 {
 	struct matrix4 mat;
@@ -445,6 +440,11 @@ void gs_shader_set_vec4(gs_sparam_t *param, const struct vec4 *val)
 void gs_shader_set_texture(gs_sparam_t *param, gs_texture_t *val)
 {
 	param->texture = val;
+}
+
+void gs_shader_set_atomic_uint(gs_sparam_t *param, unsigned int val)
+{
+	da_copy_array(param->cur_value, &val, sizeof(val));
 }
 
 static inline bool validate_param(struct program_param *pp,

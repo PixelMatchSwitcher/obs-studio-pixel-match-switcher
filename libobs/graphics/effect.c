@@ -396,7 +396,9 @@ static inline void effect_setval_inline(gs_eparam_t *param, const void *data,
 	if (size_changed)
 		da_resize(param->cur_val, size);
 
-	if (size_changed || memcmp(param->cur_val.array, data, size) != 0) {
+	if (size_changed ||
+	    param->type == GS_SHADER_PARAM_ATOMIC_UINT ||
+	    memcmp(param->cur_val.array, data, size) != 0) {
 		memcpy(param->cur_val.array, data, size);
 		param->changed = true;
 	}
@@ -487,6 +489,11 @@ void gs_effect_set_color(gs_eparam_t *param, uint32_t argb)
 void gs_effect_set_texture(gs_eparam_t *param, gs_texture_t *val)
 {
 	effect_setval_inline(param, &val, sizeof(gs_texture_t *));
+}
+
+void gs_effect_set_atomic_uint(gs_eparam_t *param, unsigned int val)
+{
+	effect_setval_inline(param, &val, sizeof(unsigned int));
 }
 
 void gs_effect_set_val(gs_eparam_t *param, const void *val, size_t size)

@@ -336,7 +336,6 @@ EXPORT void gs_shader_get_param_info(const gs_sparam_t *param,
 EXPORT void gs_shader_set_bool(gs_sparam_t *param, bool val);
 EXPORT void gs_shader_set_float(gs_sparam_t *param, float val);
 EXPORT void gs_shader_set_int(gs_sparam_t *param, int val);
-EXPORT void gs_shader_set_uint(gs_sparam_t *param, unsigned int val);
 EXPORT void gs_shader_set_matrix3(gs_sparam_t *param,
 				  const struct matrix3 *val);
 EXPORT void gs_shader_set_matrix4(gs_sparam_t *param,
@@ -345,6 +344,7 @@ EXPORT void gs_shader_set_vec2(gs_sparam_t *param, const struct vec2 *val);
 EXPORT void gs_shader_set_vec3(gs_sparam_t *param, const struct vec3 *val);
 EXPORT void gs_shader_set_vec4(gs_sparam_t *param, const struct vec4 *val);
 EXPORT void gs_shader_set_texture(gs_sparam_t *param, gs_texture_t *val);
+EXPORT void gs_shader_set_atomic_uint(gs_sparam_t *param, unsigned int val);
 EXPORT void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size);
 EXPORT void gs_shader_set_default(gs_sparam_t *param);
 EXPORT void gs_shader_set_next_sampler(gs_sparam_t *param,
@@ -432,6 +432,7 @@ EXPORT void gs_effect_set_vec2(gs_eparam_t *param, const struct vec2 *val);
 EXPORT void gs_effect_set_vec3(gs_eparam_t *param, const struct vec3 *val);
 EXPORT void gs_effect_set_vec4(gs_eparam_t *param, const struct vec4 *val);
 EXPORT void gs_effect_set_texture(gs_eparam_t *param, gs_texture_t *val);
+EXPORT void gs_effect_set_atomic_uint(gs_eparam_t *param, unsigned int val);
 EXPORT void gs_effect_set_val(gs_eparam_t *param, const void *val, size_t size);
 EXPORT void gs_effect_set_default(gs_eparam_t *param);
 EXPORT size_t gs_effect_get_val_size(gs_eparam_t *param);
