@@ -489,12 +489,6 @@ static void program_set_param_data(struct gs_program *program,
 			gl_success("glUniform1iv");
 		}
 
-	else if(pp->param->type == GS_SHADER_PARAM_UINT) {
-		if(validate_param(pp, sizeof(unsigned int))) {
-			glUniform1uiv(pp->obj, 1, (unsigned int*)array);
-		}
-	}
-
 	} else if (pp->param->type == GS_SHADER_PARAM_INT2) {
 		if (validate_param(pp, sizeof(int) * 2)) {
 			glUniform2iv(pp->obj, 1, (int *)array);
@@ -553,6 +547,15 @@ static void program_set_param_data(struct gs_program *program,
 		glUniform1i(pp->obj, pp->param->texture_id);
 		device_load_texture(program->device, pp->param->texture,
 				    pp->param->texture_id);
+
+	} else if(pp->param->type == GS_SHADER_PARAM_ATOMIC_UINT) {
+		if(validate_param(pp, sizeof(unsigned int))) {
+			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
+				     pp->param->buffer_id);
+			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
+					sizeof(unsigned int), array);
+			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+		}
 	}
 }
 
@@ -568,12 +571,15 @@ static void program_get_result_data(struct gs_program *program,
 				    struct program_result *pr)
 {
 	void *array = pr->result->cur_value.array;
+
 	if(pr->result->type == GS_SHADER_RESULT_ATOMIC_UINT) {
 		if(validate_result(pr, sizeof(unsigned int))) {
-			// TODO
+			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
+				     pr->result->buffer_id);
+			glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
+					   sizeof(unsigned int), array);
 		}
 	}
-
 }
 
 void program_get_results(struct gs_program *program)
@@ -640,12 +646,26 @@ static bool assign_program_param(struct gs_program *program,
 {
 	struct program_param info;
 
-	info.obj = glGetUniformLocation(program->obj, param->name);
-	if (!gl_success("glGetUniformLocation"))
-		return false;
+	if (param->type == GS_SHADER_PARAM_ATOMIC_UINT) {
+		glGenBuffers(1, &param->buffer_id);
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, param->buffer_id);
+		glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(unsigned int),
+			     NULL, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+		if (!gl_success("glGenBuffers") || !gl_success("glBufferData")) {
+			return false;
+		}
+		if (param->buffer_id != GL_INVALID_VALUE) {
+			return true;
+		}
+	} else {
+		info.obj = glGetUniformLocation(program->obj, param->name);
+		if (!gl_success("glGetUniformLocation"))
+			return false;
 
-	if (info.obj == -1) {
-		return true;
+		if (info.obj == -1) {
+			return true;
+		}
 	}
 
 	info.param = param;
@@ -779,7 +799,7 @@ void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 		break;
 	case GS_SHADER_PARAM_BOOL:
 	case GS_SHADER_PARAM_INT:
-	case GS_SHADER_PARAM_UINT:
+	case GS_SHADER_PARAM_ATOMIC_UINT:
 		expected_size = sizeof(int);
 		break;
 	case GS_SHADER_PARAM_INT2:

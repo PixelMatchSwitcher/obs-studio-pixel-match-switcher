@@ -43,7 +43,7 @@ enum gs_shader_param_type get_shader_param_type(const char *type)
 	else if (strcmp(type, "int") == 0)
 		return GS_SHADER_PARAM_INT;
 	else if (strcmp(type, "uint") == 0)
-		return GS_SHADER_PARAM_UINT;
+		return GS_SHADER_PARAM_ATOMIC_UINT;
 	else if (strcmp(type, "string") == 0)
 		return GS_SHADER_PARAM_STRING;
 
