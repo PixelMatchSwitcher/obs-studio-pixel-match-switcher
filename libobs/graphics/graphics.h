@@ -444,6 +444,9 @@ EXPORT size_t gs_effect_get_val_size(gs_eparam_t *param);
 EXPORT void *gs_effect_get_val(gs_eparam_t *param);
 EXPORT size_t gs_effect_get_default_val_size(gs_eparam_t *param);
 EXPORT void *gs_effect_get_default_val(gs_eparam_t *param);
+
+EXPORT unsigned int gs_effect_get_atomic_uint_result(gs_eresult_t *result);
+
 EXPORT void gs_effect_set_next_sampler(gs_eparam_t *param,
 				       gs_samplerstate_t *sampler);
 

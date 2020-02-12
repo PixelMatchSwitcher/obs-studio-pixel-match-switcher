@@ -587,6 +587,24 @@ void gs_effect_set_default(gs_eparam_t *param)
 			     param->default_val.num);
 }
 
+unsigned int gs_effect_get_atomic_uint_result(gs_eresult_t *result)
+{
+	if (!result) {
+		blog(LOG_ERROR,
+		     "gs_effect_get_atomic_uint_result: invalid result");
+		return (unsigned int)-1;
+	}
+	if (result->cur_val.num != 4) {
+		blog(LOG_ERROR,
+		     "gs_effect_get_atomic_uint_result: invalid type");
+		return (unsigned int)-1;
+	}
+
+	unsigned int val;
+	memcpy(&val, result->cur_val.array, sizeof(unsigned int));
+	return val;
+}
+
 void gs_effect_set_next_sampler(gs_eparam_t *param, gs_samplerstate_t *sampler)
 {
 	if (!param) {
