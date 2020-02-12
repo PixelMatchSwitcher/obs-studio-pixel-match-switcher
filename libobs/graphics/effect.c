@@ -295,6 +295,38 @@ gs_eparam_t *gs_effect_get_param_by_name(const gs_effect_t *effect,
 	return NULL;
 }
 
+gs_eresult_t *gs_effect_get_result_by_idx(const gs_effect_t *effect,
+					  size_t result)
+{
+	if (!effect)
+		return NULL;
+
+	struct gs_effect_result *results = effect->results.array;
+	if (result >= effect->results.num)
+		return NULL;
+
+	return results + result;
+}
+
+gs_eresult_t *gs_effect_get_result_by_name(const gs_effect_t *effect,
+					   const char *name)
+{
+	if (!effect)
+		return NULL;
+
+	struct gs_effect_result *results = effect->results.array;
+
+	for (size_t i = 0; i < effect->results.num; ++i) {
+		struct gs_effect_result *result = results + i;
+
+		if (strcmp(result->name, name) == 0) {
+			return result;
+		}
+	}
+
+	return NULL;
+}
+
 size_t gs_param_get_num_annotations(const gs_eparam_t *param)
 {
 	return param ? param->annotations.num : 0;

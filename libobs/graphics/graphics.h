@@ -275,6 +275,7 @@ typedef struct gs_effect gs_effect_t;
 typedef struct gs_effect_technique gs_technique_t;
 typedef struct gs_effect_pass gs_epass_t;
 typedef struct gs_effect_param gs_eparam_t;
+typedef struct gs_effect_result gs_eresult_t;
 typedef struct gs_device gs_device_t;
 typedef struct graphics_subsystem graphics_t;
 
@@ -401,6 +402,10 @@ EXPORT gs_eparam_t *gs_effect_get_param_by_idx(const gs_effect_t *effect,
 					       size_t param);
 EXPORT gs_eparam_t *gs_effect_get_param_by_name(const gs_effect_t *effect,
 						const char *name);
+EXPORT gs_eresult_t *gs_effect_get_result_by_idx(const gs_effect_t *effect,
+						 size_t result);
+EXPORT gs_eresult_t *gs_effect_get_result_by_name(const gs_effect_t* effect,
+						  const char *name);
 EXPORT size_t gs_param_get_num_annotations(const gs_eparam_t *param);
 EXPORT gs_eparam_t *gs_param_get_annotation_by_idx(const gs_eparam_t *param,
 						   size_t annotation);

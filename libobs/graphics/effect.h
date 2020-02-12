@@ -42,7 +42,8 @@ enum effect_section {
 	EFFECT_TECHNIQUE,
 	EFFECT_SAMPLER,
 	EFFECT_PASS,
-	EFFECT_ANNOTATION
+	EFFECT_ANNOTATION,
+	EFFECT_RESULT
 };
 
 /* ------------------------------------------------------------------------- */
@@ -87,6 +88,40 @@ static inline void effect_param_free(struct gs_effect_param *param)
 
 EXPORT void effect_param_parse_property(gs_eparam_t *param,
 					const char *property);
+
+/* ------------------------------------------------------------------------- */
+
+struct gs_effect_result {
+	char *name;
+	enum effect_section section;
+
+	enum gs_shader_result_type type;
+	DARRAY(uint8_t) cur_val;
+	gs_effect_t *effect;
+
+	DARRAY(struct gs_effect_result) annotations;
+};
+
+static inline void effect_result_init(struct gs_effect_result *result)
+{
+	memset(result, 0, sizeof(struct gs_effect_result));
+	da_init(result->annotations);
+}
+
+static inline void effect_result_free(struct gs_effect_result *result)
+{
+	bfree(result->name);
+	da_free(result->cur_val);
+
+	size_t i;
+	for (i = 0; i < result->annotations.num; i++)
+		effect_result_free(result->annotations.array + i);
+
+	da_free(result->annotations);
+}
+
+EXPORT void effect_result_parse_property(gs_eresult_t *param,
+					 const char *property);
 
 /* ------------------------------------------------------------------------- */
 
@@ -153,6 +188,7 @@ struct gs_effect {
 	char *effect_path, *effect_dir;
 
 	DARRAY(struct gs_effect_param) params;
+	DARRAY(struct gs_effect_result) results;
 	DARRAY(struct gs_effect_technique) techniques;
 
 	struct gs_effect_technique *cur_technique;
