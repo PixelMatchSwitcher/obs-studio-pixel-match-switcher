@@ -95,7 +95,7 @@ struct gs_effect_result {
 	char *name;
 	enum effect_section section;
 
-	enum gs_shader_result_type type;
+	enum gs_shader_param_type type;
 	DARRAY(uint8_t) cur_val;
 	gs_effect_t *effect;
 

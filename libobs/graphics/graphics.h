@@ -300,11 +300,6 @@ enum gs_shader_param_type {
 	GS_SHADER_PARAM_ATOMIC_UINT,
 };
 
-enum gs_shader_result_type {
-	GS_SHADER_RESULT_UNKNOWN,
-	GS_SHADER_RESULT_ATOMIC_UINT
-};
-
 #ifndef SWIG
 struct gs_shader_param_info {
 	enum gs_shader_param_type type;
@@ -312,7 +307,7 @@ struct gs_shader_param_info {
 };
 
 struct gs_shader_result_info {
-	enum gs_shader_result_type type;
+	enum gs_shader_param_type type;
 	const char *name;
 };
 

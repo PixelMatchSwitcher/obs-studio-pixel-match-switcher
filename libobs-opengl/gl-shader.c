@@ -572,7 +572,7 @@ static void program_get_result_data(struct gs_program *program,
 {
 	void *array = pr->result->cur_value.array;
 
-	if(pr->result->type == GS_SHADER_RESULT_ATOMIC_UINT) {
+	if(pr->result->type == GS_SHADER_PARAM_ATOMIC_UINT) {
 		if(validate_result(pr, sizeof(unsigned int))) {
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
 				     pr->result->buffer_id);

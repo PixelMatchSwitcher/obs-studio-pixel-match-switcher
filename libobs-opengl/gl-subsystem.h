@@ -420,7 +420,7 @@ struct gs_shader_param {
 };
 
 struct gs_shader_result {
-	enum gs_shader_result_type type;
+	enum gs_shader_param_type type;
 	char *name;
 	gs_shader_t *shader;
 	GLuint buffer_id;

@@ -67,26 +67,29 @@ static inline void ep_var_free(struct ep_var *epv)
 /* effect parser param data */
 
 struct ep_param {
-	char *type, *name;
+	char *type, *name, *layout_qualifiers;
 	DARRAY(uint8_t) default_val;
 	DARRAY(char *) properties;
 	struct gs_effect_param *param;
-	bool is_const, is_property, is_uniform, is_texture, written;
+	bool is_const, is_property, is_uniform, is_texture, is_result, written;
 	int writeorder, array_count;
 	DARRAY(struct ep_param) annotations;
 };
 
 extern void ep_param_writevar(struct dstr *dst, struct darray *use_params);
 
-static inline void ep_param_init(struct ep_param *epp, char *type, char *name,
+static inline void ep_param_init(struct ep_param *epp,
+				 char *type, char *name, char *layout_qualifiers,
 				 bool is_property, bool is_const,
-				 bool is_uniform)
+				 bool is_uniform, bool is_result)
 {
 	epp->type = type;
 	epp->name = name;
+	epp->layout_qualifiers = layout_qualifiers;
 	epp->is_property = is_property;
 	epp->is_const = is_const;
 	epp->is_uniform = is_uniform;
+	epp->is_result = is_result;
 	epp->is_texture = (astrcmp_n(epp->type, "texture", 7) == 0);
 	epp->written = false;
 	epp->writeorder = false;
@@ -260,6 +263,7 @@ struct effect_parser {
 	gs_effect_t *effect;
 
 	DARRAY(struct ep_param) params;
+	DARRAY(struct ep_param) results;
 	DARRAY(struct ep_struct) structs;
 	DARRAY(struct ep_func) funcs;
 	DARRAY(struct ep_sampler) samplers;

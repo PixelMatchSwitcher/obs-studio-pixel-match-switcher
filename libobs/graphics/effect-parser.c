@@ -48,7 +48,7 @@ static enum gs_shader_param_type get_effect_param_type(const char *type)
 		return GS_SHADER_PARAM_BOOL;
 	else if (strcmp(type, "int") == 0)
 		return GS_SHADER_PARAM_INT;
-	else if (strcmp(type, "uint") == 0)
+	else if (strcmp(type, "atomic_uint") == 0)
 		return GS_SHADER_PARAM_ATOMIC_UINT;
 	else if (strcmp(type, "string") == 0)
 		return GS_SHADER_PARAM_STRING;
@@ -408,8 +408,8 @@ static int ep_parse_annotations(struct effect_parser *ep,
 		bool do_break = false;
 		struct ep_param var;
 
-		ep_param_init(&var, bstrdup(""), bstrdup(""), false, false,
-			      false);
+		ep_param_init(&var, bstrdup(""), bstrdup(""), bstrdup(""),
+			      false, false, false, false);
 
 		switch (ep_parse_param_annotation_var(ep, &var)) {
 		case PARSE_UNEXPECTED_CONTINUE:
@@ -1140,11 +1140,14 @@ static inline bool ep_parse_param_assign(struct effect_parser *ep,
 {
 } */
 
-static void ep_parse_param(struct effect_parser *ep, char *type, char *name,
-			   bool is_property, bool is_const, bool is_uniform)
+static void ep_parse_param(struct effect_parser *ep,
+			   char *type, char *name, char *layout_qualifiers,
+			   bool is_property, bool is_const,
+			   bool is_uniform, bool is_result)
 {
 	struct ep_param param;
-	ep_param_init(&param, type, name, is_property, is_const, is_uniform);
+	ep_param_init(&param, type, name, layout_qualifiers,
+		      is_property, is_const, is_uniform, is_result);
 
 	if (cf_token_is(&ep->cfp, ";"))
 		goto complete;
@@ -1210,8 +1213,10 @@ static inline void report_invalid_func_keyword(struct effect_parser *ep,
 
 static void ep_parse_other(struct effect_parser *ep)
 {
-	bool is_property = false, is_const = false, is_uniform = false;
-	char *type = NULL, *name = NULL;
+	bool is_property = false, is_const = false;
+	bool is_uniform = false, is_result = false;
+	char *type = NULL, *name = NULL, *layout_qualifiers = NULL;
+	// TODO parse layout qualifiers, set is_result, store result;
 
 	if (!ep_get_var_specifiers(ep, &is_property, &is_const, &is_uniform))
 		goto error;
@@ -1231,8 +1236,8 @@ static void ep_parse_other(struct effect_parser *ep)
 		ep_parse_function(ep, type, name);
 		return;
 	} else {
-		ep_parse_param(ep, type, name, is_property, is_const,
-			       is_uniform);
+		ep_parse_param(ep, type, name, layout_qualifiers,
+			       is_property, is_const, is_uniform, is_result);
 		return;
 	}
 
