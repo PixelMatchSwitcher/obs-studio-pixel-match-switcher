@@ -683,6 +683,51 @@ error:
 	ep_sampler_free(&eps);
 }
 
+static void ep_parse_layout(struct effect_parser *ep,
+			    struct ep_layout_info **layout)
+{
+	// TODO: don't do low level stuff in this file
+	*layout = bmalloc(sizeof(struct ep_layout_info));
+	(*layout)->binding = 0;
+	(*layout)->offset = 0;
+
+	if (cf_next_token_should_be(&ep->cfp, "(", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (cf_next_token_should_be(&ep->cfp, "binding", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (cf_next_token_should_be(&ep->cfp, "=", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (!cf_next_valid_token(&ep->cfp))
+		goto error;
+	(*layout)->binding =
+		 (unsigned int)strtol(ep->cfp.cur_token->str.array, NULL, 10);
+	if(cf_token_is(&ep->cfp, ")")) {
+		if (!cf_next_valid_token(&ep->cfp))
+			goto error;
+		return;
+	}
+	if (cf_next_token_should_be(&ep->cfp, ",", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (cf_next_token_should_be(&ep->cfp, "offset", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (cf_next_token_should_be(&ep->cfp, "=", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (!cf_next_valid_token(&ep->cfp))
+		goto error;
+	(*layout)->offset =
+		 (unsigned int)strtol(ep->cfp.cur_token->str.array, NULL, 10);
+	if (cf_next_token_should_be(&ep->cfp, ")", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+
+	return; // SUCCESS
+
+error:
+	if (*layout) {
+		bfree(*layout);
+	}
+	layout = NULL;
+}
+
 static inline int ep_check_for_keyword(struct effect_parser *ep,
 				       const char *keyword, bool *val)
 {
@@ -1143,7 +1188,8 @@ static inline bool ep_parse_param_assign(struct effect_parser *ep,
 static void ep_parse_param(struct effect_parser *ep,
 			   char *type, char *name, char *layout_qualifiers,
 			   bool is_property, bool is_const,
-			   bool is_uniform, bool is_result)
+			   bool is_uniform, bool is_result,
+			   struct ep_layout_info *layout)
 {
 	struct ep_param param;
 	ep_param_init(&param, type, name, layout_qualifiers,
@@ -1164,16 +1210,25 @@ static void ep_parse_param(struct effect_parser *ep,
 	if (!cf_token_is(&ep->cfp, ";"))
 		goto error;
 
+	if (layout) {
+		param.layout_binding = layout->binding;
+		param.layout_offset = layout->offset;
+		bfree(layout);
+	}
+
 complete:
 	da_push_back(ep->params, &param);
+	if (is_result)
+		da_push_back(ep->results, &param);
 	return;
 
 error:
 	ep_param_free(&param);
 }
 
-static bool ep_get_var_specifiers(struct effect_parser *ep, bool *is_property,
-				  bool *is_const, bool *is_uniform)
+static bool ep_get_var_specifiers(struct effect_parser *ep,
+				  bool *is_property, bool *is_const,
+				  bool *is_uniform)
 {
 	while (true) {
 		int code;
@@ -1211,20 +1266,22 @@ static inline void report_invalid_func_keyword(struct effect_parser *ep,
 			    LEX_ERROR, name, NULL, NULL);
 }
 
-static void ep_parse_other(struct effect_parser *ep)
+static void ep_parse_other(struct effect_parser *ep,
+			   struct ep_layout_info *layout)
 {
 	bool is_property = false, is_const = false;
 	bool is_uniform = false, is_result = false;
 	char *type = NULL, *name = NULL, *layout_qualifiers = NULL;
+
 	// TODO parse layout qualifiers, set is_result, store result;
 
 	if (!ep_get_var_specifiers(ep, &is_property, &is_const, &is_uniform))
 		goto error;
-
 	if (cf_get_name(&ep->cfp, &type, "type", ";") != PARSE_SUCCESS)
 		goto error;
 	if (cf_next_name(&ep->cfp, &name, "name", ";") != PARSE_SUCCESS)
 		goto error;
+	ep_check_for_keyword(ep, "atomic_uint", &is_result);
 	if (!cf_next_valid_token(&ep->cfp))
 		goto error;
 
@@ -1237,7 +1294,8 @@ static void ep_parse_other(struct effect_parser *ep)
 		return;
 	} else {
 		ep_parse_param(ep, type, name, layout_qualifiers,
-			       is_property, is_const, is_uniform, is_result);
+			       is_property, is_const, is_uniform, is_result,
+			       layout);
 		return;
 	}
 
@@ -1453,6 +1511,8 @@ bool ep_parse(struct effect_parser *ep, gs_effect_t *effect,
 
 	const char *graphics_preprocessor = gs_preprocessor_name();
 
+	struct ep_layout_info *layout = NULL;
+
 	if (graphics_preprocessor) {
 		struct cf_def def;
 
@@ -1476,13 +1536,12 @@ bool ep_parse(struct effect_parser *ep, gs_effect_t *effect,
 
 		} else if (cf_token_is(&ep->cfp, "struct")) {
 			ep_parse_struct(ep);
-
+		} else if (cf_token_is(&ep->cfp, "layout")) {
+			ep_parse_layout(ep, &layout);
 		} else if (cf_token_is(&ep->cfp, "technique")) {
 			ep_parse_technique(ep);
-
 		} else if (cf_token_is(&ep->cfp, "sampler_state")) {
 			ep_parse_sampler_state(ep);
-
 		} else if (cf_token_is(&ep->cfp, "{")) {
 			/* add error and pass braces */
 			cf_adderror(&ep->cfp, "Unexpected code segment",
@@ -1491,7 +1550,7 @@ bool ep_parse(struct effect_parser *ep, gs_effect_t *effect,
 
 		} else {
 			/* parameters and functions */
-			ep_parse_other(ep);
+			ep_parse_other(ep, layout);
 		}
 	}
 
