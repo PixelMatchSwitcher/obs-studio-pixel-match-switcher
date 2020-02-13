@@ -716,7 +716,9 @@ static void ep_parse_layout(struct effect_parser *ep,
 		goto error;
 	(*layout)->offset =
 		 (unsigned int)strtol(ep->cfp.cur_token->str.array, NULL, 10);
-	if (cf_next_token_should_be(&ep->cfp, ")", ";", NULL) != PARSE_SUCCESS)
+	if (cf_next_token_should_be(&ep->cfp, ")", NULL, NULL) != PARSE_SUCCESS)
+		goto error;
+	if (!cf_next_valid_token(&ep->cfp))
 		goto error;
 
 	return; // SUCCESS
@@ -1266,22 +1268,25 @@ static inline void report_invalid_func_keyword(struct effect_parser *ep,
 			    LEX_ERROR, name, NULL, NULL);
 }
 
-static void ep_parse_other(struct effect_parser *ep,
-			   struct ep_layout_info *layout)
+static void ep_parse_other(struct effect_parser *ep)
 {
 	bool is_property = false, is_const = false;
 	bool is_uniform = false, is_result = false;
 	char *type = NULL, *name = NULL, *layout_qualifiers = NULL;
 
-	// TODO parse layout qualifiers, set is_result, store result;
+	struct ep_layout_info *layout = NULL;
+	if (cf_token_is(&ep->cfp, "layout"))
+		ep_parse_layout(ep, &layout);
 
 	if (!ep_get_var_specifiers(ep, &is_property, &is_const, &is_uniform))
 		goto error;
 	if (cf_get_name(&ep->cfp, &type, "type", ";") != PARSE_SUCCESS)
 		goto error;
+	if (cf_token_is(&ep->cfp, "atomic_uint")) {
+		is_result = true;
+	}
 	if (cf_next_name(&ep->cfp, &name, "name", ";") != PARSE_SUCCESS)
 		goto error;
-	ep_check_for_keyword(ep, "atomic_uint", &is_result);
 	if (!cf_next_valid_token(&ep->cfp))
 		goto error;
 
@@ -1511,8 +1516,6 @@ bool ep_parse(struct effect_parser *ep, gs_effect_t *effect,
 
 	const char *graphics_preprocessor = gs_preprocessor_name();
 
-	struct ep_layout_info *layout = NULL;
-
 	if (graphics_preprocessor) {
 		struct cf_def def;
 
@@ -1533,11 +1536,8 @@ bool ep_parse(struct effect_parser *ep, gs_effect_t *effect,
 		    is_whitespace(*ep->cfp.cur_token->str.array)) {
 			/* do nothing */
 			ep->cfp.cur_token++;
-
 		} else if (cf_token_is(&ep->cfp, "struct")) {
 			ep_parse_struct(ep);
-		} else if (cf_token_is(&ep->cfp, "layout")) {
-			ep_parse_layout(ep, &layout);
 		} else if (cf_token_is(&ep->cfp, "technique")) {
 			ep_parse_technique(ep);
 		} else if (cf_token_is(&ep->cfp, "sampler_state")) {
@@ -1547,10 +1547,9 @@ bool ep_parse(struct effect_parser *ep, gs_effect_t *effect,
 			cf_adderror(&ep->cfp, "Unexpected code segment",
 				    LEX_ERROR, NULL, NULL, NULL);
 			cf_pass_pair(&ep->cfp, '{', '}');
-
 		} else {
 			/* parameters and functions */
-			ep_parse_other(ep, layout);
+			ep_parse_other(ep);
 		}
 	}
 
@@ -1839,6 +1838,8 @@ static inline void ep_reset_written(struct effect_parser *ep)
 	size_t i;
 	for (i = 0; i < ep->params.num; i++)
 		ep->params.array[i].written = false;
+	for (i = 0; i < ep->results.num; i++)
+		ep->results.array[i].written = false;
 	for (i = 0; i < ep->structs.num; i++)
 		ep->structs.array[i].written = false;
 	for (i = 0; i < ep->funcs.num; i++)

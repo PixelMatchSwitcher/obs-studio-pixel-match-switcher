@@ -289,6 +289,7 @@ struct effect_parser {
 static inline void ep_init(struct effect_parser *ep)
 {
 	da_init(ep->params);
+	da_init(ep->results);
 	da_init(ep->structs);
 	da_init(ep->funcs);
 	da_init(ep->samplers);
