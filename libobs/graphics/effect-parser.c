@@ -1957,6 +1957,21 @@ static void ep_compile_param(struct effect_parser *ep, size_t idx)
 	ep_compile_param_annotations(param_in, param, ep);
 }
 
+static void ep_compile_result(struct effect_parser *ep, size_t idx)
+{
+	struct gs_effect_result *result;
+	struct ep_param *param_in;
+
+	result = ep->effect->results.array + idx;
+	param_in = ep->results.array + idx;
+
+	result->name = bstrdup(param_in->name);
+	result->effect = ep->effect;
+	result->type = get_effect_param_type(param_in->type);
+
+	// TODO: compile annotations?
+}
+
 static bool ep_compile_pass_shaderparams(struct effect_parser *ep,
 					 struct darray *pass_params,
 					 struct darray *used_params,
@@ -2135,14 +2150,18 @@ static bool ep_compile(struct effect_parser *ep)
 	assert(ep->effect);
 
 	da_resize(ep->effect->params, ep->params.num);
+	da_resize(ep->effect->results, ep->results.num);
 	da_resize(ep->effect->techniques, ep->techniques.num);
 
 #if defined(_DEBUG) && defined(_DEBUG_SHADERS)
 	blog(LOG_DEBUG, "Shader has %lld parameters:", ep->params.num);
+	blog(LOG_DEBUG, "Shader has %lld results:", ep->results.num);
 #endif
 
 	for (i = 0; i < ep->params.num; i++)
 		ep_compile_param(ep, i);
+	for (i = 0; i < ep->results.num; i++)
+		ep_compile_result(ep, i);
 
 #if defined(_DEBUG) && defined(_DEBUG_SHADERS)
 	blog(LOG_DEBUG, "Shader has %lld techniques:", ep->techniques.num);

@@ -43,7 +43,6 @@ enum effect_section {
 	EFFECT_SAMPLER,
 	EFFECT_PASS,
 	EFFECT_ANNOTATION,
-	EFFECT_RESULT
 };
 
 /* ------------------------------------------------------------------------- */
@@ -213,6 +212,8 @@ static inline void effect_free(gs_effect_t *effect)
 	size_t i;
 	for (i = 0; i < effect->params.num; i++)
 		effect_param_free(effect->params.array + i);
+	for (i = 0; i < effect->results.num; i++)
+		effect_result_free(effect->results.array + i);
 	for (i = 0; i < effect->techniques.num; i++)
 		effect_technique_free(effect->techniques.array + i);
 
