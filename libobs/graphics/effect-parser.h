@@ -72,7 +72,7 @@ struct ep_param {
 	DARRAY(char *) properties;
 	struct gs_effect_param *param;
 	bool is_const, is_property, is_uniform, is_texture, is_result, written;
-	unsigned int layout_binding, layout_offset;
+	//unsigned int layout_binding, layout_offset;
 	int writeorder, array_count;
 	DARRAY(struct ep_param) annotations;
 };
@@ -174,6 +174,7 @@ static inline void ep_sampler_free(struct ep_sampler *eps)
 	da_free(eps->values);
 }
 
+#if 0
 /* ------------------------------------------------------------------------- */
 /* effect parser layout info */
 struct ep_layout_info
@@ -181,6 +182,7 @@ struct ep_layout_info
 	unsigned int binding;
 	unsigned int offset;
 };
+#endif
 
 /* ------------------------------------------------------------------------- */
 /* effect parser pass data */

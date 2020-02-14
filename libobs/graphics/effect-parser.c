@@ -683,13 +683,15 @@ error:
 	ep_sampler_free(&eps);
 }
 
-static void ep_parse_layout(struct effect_parser *ep,
-			    struct ep_layout_info **layout)
+static bool ep_parse_layout(struct effect_parser *ep /*,
+			    struct ep_layout_info **layout*/)
 {
+#if 0
 	// TODO: don't do low level stuff in this file
 	*layout = bmalloc(sizeof(struct ep_layout_info));
 	(*layout)->binding = 0;
 	(*layout)->offset = 0;
+#endif
 
 	if (cf_next_token_should_be(&ep->cfp, "(", ";", NULL) != PARSE_SUCCESS)
 		goto error;
@@ -699,14 +701,14 @@ static void ep_parse_layout(struct effect_parser *ep,
 		goto error;
 	if (!cf_next_valid_token(&ep->cfp))
 		goto error;
-	(*layout)->binding =
-		 (unsigned int)strtol(ep->cfp.cur_token->str.array, NULL, 10);
+	//(*layout)->binding =
+	//	 (unsigned int)strtol(ep->cfp.cur_token->str.array, NULL, 10);
 	if (!cf_next_valid_token(&ep->cfp))
 		goto error;
 	if(cf_token_is(&ep->cfp, ")")) {
 		if (!cf_next_valid_token(&ep->cfp))
 			goto error;
-		return;
+		return true;
 	}
 	if (!cf_token_is(&ep->cfp, ","))
 		goto error;
@@ -716,20 +718,23 @@ static void ep_parse_layout(struct effect_parser *ep,
 		goto error;
 	if (!cf_next_valid_token(&ep->cfp))
 		goto error;
-	(*layout)->offset =
-		 (unsigned int)strtol(ep->cfp.cur_token->str.array, NULL, 10);
+	//(*layout)->offset =
+	//	 (unsigned int)strtol(ep->cfp.cur_token->str.array, NULL, 10);
 	if (cf_next_token_should_be(&ep->cfp, ")", NULL, NULL) != PARSE_SUCCESS)
 		goto error;
 	if (!cf_next_valid_token(&ep->cfp))
 		goto error;
 
-	return; // SUCCESS
+	return true; // SUCCESS
 
 error:
+#if 0
 	if (*layout) {
 		bfree(*layout);
 	}
 	layout = NULL;
+#endif
+	return true;
 }
 
 static inline int ep_check_for_keyword(struct effect_parser *ep,
@@ -1192,8 +1197,8 @@ static inline bool ep_parse_param_assign(struct effect_parser *ep,
 static void ep_parse_param(struct effect_parser *ep,
 			   char *type, char *name, char *layout_qualifiers,
 			   bool is_property, bool is_const,
-			   bool is_uniform, bool is_result,
-			   struct ep_layout_info *layout)
+			   bool is_uniform, bool is_result
+			   /*, struct ep_layout_info *layout*/)
 {
 	struct ep_param param;
 	ep_param_init(&param, type, name, layout_qualifiers,
@@ -1214,11 +1219,13 @@ static void ep_parse_param(struct effect_parser *ep,
 	if (!cf_token_is(&ep->cfp, ";"))
 		goto error;
 
+#if 0
 	if (layout) {
 		param.layout_binding = layout->binding;
 		param.layout_offset = layout->offset;
 		bfree(layout);
 	}
+#endif
 
 complete:
 	da_push_back(ep->params, &param);
@@ -1276,9 +1283,10 @@ static void ep_parse_other(struct effect_parser *ep)
 	bool is_uniform = false, is_result = false;
 	char *type = NULL, *name = NULL, *layout_qualifiers = NULL;
 
-	struct ep_layout_info *layout = NULL;
+	//struct ep_layout_info *layout = NULL;
 	if (cf_token_is(&ep->cfp, "layout"))
-		ep_parse_layout(ep, &layout);
+		if (!ep_parse_layout(ep /*, &layout*/))
+			goto error;
 
 	if (!ep_get_var_specifiers(ep, &is_property, &is_const, &is_uniform))
 		goto error;
@@ -1301,8 +1309,8 @@ static void ep_parse_other(struct effect_parser *ep)
 		return;
 	} else {
 		ep_parse_param(ep, type, name, layout_qualifiers,
-			       is_property, is_const, is_uniform, is_result,
-			       layout);
+			       is_property, is_const, is_uniform, is_result
+			       /* ,layout */);
 		return;
 	}
 

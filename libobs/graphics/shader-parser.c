@@ -42,10 +42,10 @@ enum gs_shader_param_type get_shader_param_type(const char *type)
 		return GS_SHADER_PARAM_BOOL;
 	else if (strcmp(type, "int") == 0)
 		return GS_SHADER_PARAM_INT;
-	else if (strcmp(type, "uint") == 0)
-		return GS_SHADER_PARAM_ATOMIC_UINT;
 	else if (strcmp(type, "string") == 0)
 		return GS_SHADER_PARAM_STRING;
+	else if (strcmp(type, "atomic_uint") == 0)
+		return GS_SHADER_PARAM_ATOMIC_UINT;
 
 	return GS_SHADER_PARAM_UNKNOWN;
 }
@@ -325,6 +325,48 @@ static void sp_parse_struct(struct shader_parser *sp)
 
 error:
 	shader_struct_free(&ss);
+}
+
+static bool sp_parse_layout(struct shader_parser *sp,
+			    unsigned int *binding, unsigned int *offset)
+{
+	if (cf_next_token_should_be(&sp->cfp, "(", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (cf_next_token_should_be(&sp->cfp, "binding", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (cf_next_token_should_be(&sp->cfp, "=", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (!cf_next_valid_token(&sp->cfp))
+		goto error;
+	*binding =
+		 (unsigned int)strtol(sp->cfp.cur_token->str.array, NULL, 10);
+	if (!cf_next_valid_token(&sp->cfp))
+		goto error;
+	if(cf_token_is(&sp->cfp, ")")) {
+		// TODO: automated offset determination
+		if (!cf_next_valid_token(&sp->cfp))
+			goto error;
+		return true;
+	}
+	if (!cf_token_is(&sp->cfp, ","))
+		goto error;
+	if (cf_next_token_should_be(&sp->cfp, "offset", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (cf_next_token_should_be(&sp->cfp, "=", ";", NULL) != PARSE_SUCCESS)
+		goto error;
+	if (!cf_next_valid_token(&sp->cfp))
+		goto error;
+	*offset =
+		 (unsigned int)strtol(sp->cfp.cur_token->str.array, NULL, 10);
+	if (cf_next_token_should_be(&sp->cfp, ")", NULL, NULL) != PARSE_SUCCESS)
+		goto error;
+	if (!cf_next_valid_token(&sp->cfp))
+		goto error;
+
+	return true; // SUCCESS
+
+error:
+	return false;
 }
 
 static inline int sp_check_for_keyword(struct shader_parser *sp,
@@ -630,10 +672,12 @@ static inline bool sp_parse_param_assign(struct shader_parser *sp,
 }
 
 static void sp_parse_param(struct shader_parser *sp, char *type, char *name,
-			   bool is_const, bool is_uniform)
+			   bool is_const, bool is_uniform,
+			   unsigned int lo_binding, unsigned int lo_offset)
 {
 	struct shader_var param;
-	shader_var_init_param(&param, type, name, is_uniform, is_const);
+	shader_var_init_param(&param, type, name, is_uniform, is_const,
+			      lo_binding, lo_offset);
 
 	if (cf_token_is(&sp->cfp, ";"))
 		goto complete;
@@ -688,6 +732,11 @@ static void sp_parse_other(struct shader_parser *sp)
 {
 	bool is_const = false, is_uniform = false;
 	char *type = NULL, *name = NULL;
+	unsigned int lo_binding = 0, lo_offset = 0;
+
+	//if (cf_token_is(&sp->cfp, "layout"))
+	//	if (!sp_parse_layout(sp, &lo_binding, &lo_offset))
+	//		goto error;
 
 	if (!sp_get_var_specifiers(sp, &is_const, &is_uniform))
 		goto error;
@@ -707,7 +756,8 @@ static void sp_parse_other(struct shader_parser *sp)
 		sp_parse_function(sp, type, name);
 		return;
 	} else {
-		sp_parse_param(sp, type, name, is_const, is_uniform);
+		sp_parse_param(sp, type, name, is_const, is_uniform,
+			       lo_binding, lo_offset);
 		return;
 	}
 
