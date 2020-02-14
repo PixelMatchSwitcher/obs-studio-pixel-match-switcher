@@ -701,12 +701,14 @@ static void ep_parse_layout(struct effect_parser *ep,
 		goto error;
 	(*layout)->binding =
 		 (unsigned int)strtol(ep->cfp.cur_token->str.array, NULL, 10);
+	if (!cf_next_valid_token(&ep->cfp))
+		goto error;
 	if(cf_token_is(&ep->cfp, ")")) {
 		if (!cf_next_valid_token(&ep->cfp))
 			goto error;
 		return;
 	}
-	if (cf_next_token_should_be(&ep->cfp, ",", ";", NULL) != PARSE_SUCCESS)
+	if (!cf_token_is(&ep->cfp, ","))
 		goto error;
 	if (cf_next_token_should_be(&ep->cfp, "offset", ";", NULL) != PARSE_SUCCESS)
 		goto error;
