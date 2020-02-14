@@ -78,6 +78,10 @@ static bool gl_add_param(struct gs_shader *shader, struct shader_var *var,
 	if (param.type == GS_SHADER_PARAM_TEXTURE) {
 		param.sampler_id = var->gl_sampler_id;
 		param.texture_id = (*texture_id)++;
+	} else if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
+		//param.buffer_id = var->layout_binding;
+		//param.layout_offset = var->layout_offset;
+		param.changed = true;
 	} else {
 		param.changed = true;
 	}
@@ -552,7 +556,8 @@ static void program_set_param_data(struct gs_program *program,
 		if(validate_param(pp, sizeof(unsigned int))) {
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
 				     pp->param->buffer_id);
-			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
+			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER,
+					pp->param->layout_offset,
 					sizeof(unsigned int), array);
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 		}
@@ -576,7 +581,8 @@ static void program_get_result_data(struct gs_program *program,
 		if(validate_result(pr, sizeof(unsigned int))) {
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
 				     pr->result->buffer_id);
-			glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
+			glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER,
+					   pr->result->layout_offset,
 					   sizeof(unsigned int), array);
 		}
 	}

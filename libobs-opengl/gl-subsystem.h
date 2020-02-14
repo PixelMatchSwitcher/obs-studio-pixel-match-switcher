@@ -409,6 +409,7 @@ struct gs_shader_param {
 	GLint texture_id;
 	size_t sampler_id;
 	GLuint buffer_id;
+	unsigned int layout_offset;
 
 	int array_count;
 
@@ -424,6 +425,7 @@ struct gs_shader_result {
 	char *name;
 	gs_shader_t *shader;
 	GLuint buffer_id;
+	unsigned int layout_offset;
 	int array_count;
 	DARRAY(uint8_t) cur_value;
 };
