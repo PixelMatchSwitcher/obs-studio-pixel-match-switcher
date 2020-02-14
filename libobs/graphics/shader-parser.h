@@ -46,16 +46,18 @@ enum shader_var_type {
 };
 
 struct shader_var {
+	//unsigned int dummy1;
+	//unsigned int dummy2;
+
 	char *type;
 	char *name;
 	char *mapping;
 	enum shader_var_type var_type;
 	int array_count;
 	size_t gl_sampler_id; /* optional: used/parsed by GL */
+	DARRAY(uint8_t) default_val;
 	//unsigned int layout_binding;
 	//unsigned int layout_offset;
-
-	DARRAY(uint8_t) default_val;
 };
 
 static inline void shader_var_init(struct shader_var *sv)
