@@ -79,8 +79,8 @@ static bool gl_add_param(struct gs_shader *shader, struct shader_var *var,
 		param.sampler_id = var->gl_sampler_id;
 		param.texture_id = (*texture_id)++;
 	} else if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
-		//param.buffer_id = var->layout_binding;
-		//param.layout_offset = var->layout_offset;
+		param.buffer_id = var->layout_binding;
+		param.layout_offset = var->layout_offset;
 		param.changed = true;
 	} else {
 		param.changed = true;
