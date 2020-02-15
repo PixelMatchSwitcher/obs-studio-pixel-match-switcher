@@ -595,9 +595,7 @@ unsigned int gs_effect_get_atomic_uint_result(gs_eresult_t *result)
 		return (unsigned int)-1;
 	}
 	if (result->cur_val.num != 4) {
-		blog(LOG_ERROR,
-		     "gs_effect_get_atomic_uint_result: invalid type");
-		return (unsigned int)-1;
+		da_resize(result->cur_val, 4);
 	}
 
 	unsigned int val;
