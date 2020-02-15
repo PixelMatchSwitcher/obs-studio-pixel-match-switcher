@@ -113,7 +113,7 @@ static void gl_write_var(struct gl_shader_parser *glsp, struct shader_var *var)
 		layout_str = bmalloc(64);
 		snprintf(layout_str, 64,
 			"layout (binding = %u, offset = %u) ",
-			var->layout_binding, var->layout_binding);
+			var->layout_binding, var->layout_offset);
 		dstr_cat(&glsp->gl_string, layout_str);
 		bfree(layout_str);
 	}

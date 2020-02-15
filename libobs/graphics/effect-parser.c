@@ -686,13 +686,6 @@ error:
 static bool ep_parse_layout(struct effect_parser *ep,
 			    unsigned int *binding, unsigned int *offset)
 {
-#if 0
-	// TODO: don't do low level stuff in this file
-	*layout = bmalloc(sizeof(struct ep_layout_info));
-	(*layout)->binding = 0;
-	(*layout)->offset = 0;
-#endif
-
 	if (cf_next_token_should_be(&ep->cfp, "(", ";", NULL) != PARSE_SUCCESS)
 		goto error;
 	if (cf_next_token_should_be(&ep->cfp, "binding", ";", NULL) != PARSE_SUCCESS)
