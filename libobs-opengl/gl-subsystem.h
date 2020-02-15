@@ -409,6 +409,7 @@ struct gs_shader_param {
 	GLint texture_id;
 	size_t sampler_id;
 	GLuint buffer_id;
+	unsigned int layout_binding;
 	unsigned int layout_offset;
 
 	int array_count;
@@ -420,11 +421,11 @@ struct gs_shader_param {
 	bool changed;
 };
 
-struct gs_shader_result {
+struct gs_program_result {
 	enum gs_shader_param_type type;
 	char *name;
-	gs_shader_t *shader;
 	GLuint buffer_id;
+	unsigned int layout_binding;
 	unsigned int layout_offset;
 	int array_count;
 	DARRAY(uint8_t) cur_value;
@@ -455,7 +456,7 @@ struct gs_shader {
 
 	DARRAY(struct shader_attrib) attribs;
 	DARRAY(struct gs_shader_param) params;
-	DARRAY(struct gs_shader_result) results;
+	DARRAY(struct gs_program_result) results;
 	DARRAY(gs_samplerstate_t *) samplers;
 };
 
@@ -465,7 +466,7 @@ struct program_param {
 };
 
 struct program_result {
-	struct gs_shader_result *result;
+	struct gs_program_result *result;
 };
 
 struct gs_program {

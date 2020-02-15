@@ -672,11 +672,12 @@ static inline bool sp_parse_param_assign(struct shader_parser *sp,
 }
 
 static void sp_parse_param(struct shader_parser *sp, char *type, char *name,
-			   bool is_const, bool is_uniform,
+			   bool is_const, bool is_uniform, bool is_result,
 			   unsigned int lo_binding, unsigned int lo_offset)
 {
 	struct shader_var param;
-	shader_var_init_param(&param, type, name, is_uniform, is_const,
+	shader_var_init_param(&param, type, name,
+			      is_uniform, is_const, is_result,
 			      lo_binding, lo_offset);
 
 	if (cf_token_is(&sp->cfp, ";"))
@@ -730,7 +731,7 @@ static inline void report_invalid_func_keyword(struct shader_parser *sp,
 
 static void sp_parse_other(struct shader_parser *sp)
 {
-	bool is_const = false, is_uniform = false;
+	bool is_const = false, is_uniform = false, is_result = false;
 	char *type = NULL, *name = NULL;
 	unsigned int lo_binding = 0, lo_offset = 0;
 
@@ -745,6 +746,9 @@ static void sp_parse_other(struct shader_parser *sp)
 		goto error;
 	if (cf_next_name(&sp->cfp, &name, "name", ";") != PARSE_SUCCESS)
 		goto error;
+	if (cf_token_is(&sp->cfp, "atomic_uint")) {
+		is_result = true;
+	}
 
 	if (!cf_next_valid_token(&sp->cfp))
 		goto error;
@@ -756,7 +760,8 @@ static void sp_parse_other(struct shader_parser *sp)
 		sp_parse_function(sp, type, name);
 		return;
 	} else {
-		sp_parse_param(sp, type, name, is_const, is_uniform,
+		sp_parse_param(sp, type, name,
+			       is_const, is_uniform, is_result,
 			       lo_binding, lo_offset);
 		return;
 	}

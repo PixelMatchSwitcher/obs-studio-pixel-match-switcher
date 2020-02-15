@@ -250,7 +250,7 @@ struct gs_swap_chain;
 struct gs_timer;
 struct gs_texrender;
 struct gs_shader_param;
-struct gs_shader_result;
+struct gs_program_result;
 struct gs_effect;
 struct gs_effect_technique;
 struct gs_effect_pass;
@@ -270,7 +270,7 @@ typedef struct gs_timer_range gs_timer_range_t;
 typedef struct gs_texture_render gs_texrender_t;
 typedef struct gs_shader gs_shader_t;
 typedef struct gs_shader_param gs_sparam_t;
-typedef struct gs_shader_result gs_sresult_t;
+typedef struct gs_program_result gs_sresult_t;
 typedef struct gs_effect gs_effect_t;
 typedef struct gs_effect_technique gs_technique_t;
 typedef struct gs_effect_pass gs_epass_t;
@@ -306,7 +306,7 @@ struct gs_shader_param_info {
 	const char *name;
 };
 
-struct gs_shader_result_info {
+struct gs_program_result_info {
 	enum gs_shader_param_type type;
 	const char *name;
 };
