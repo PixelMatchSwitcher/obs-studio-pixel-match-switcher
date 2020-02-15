@@ -42,7 +42,7 @@ enum shader_var_type {
 	SHADER_VAR_INOUT,
 	SHADER_VAR_OUT,
 	SHADER_VAR_UNIFORM,
-	SHADER_VAR_CONST
+	SHADER_VAR_CONST,
 };
 
 struct shader_var {

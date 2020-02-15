@@ -17,6 +17,7 @@
 
 #include "gl-subsystem.h"
 #include "gl-shaderparser.h"
+#include <stdio.h> // for sprintf
 
 static void gl_write_function_contents(struct gl_shader_parser *glsp,
 				       struct cf_token **p_token,
@@ -106,6 +107,22 @@ static inline bool gl_write_type_token(struct gl_shader_parser *glsp,
 
 static void gl_write_var(struct gl_shader_parser *glsp, struct shader_var *var)
 {
+	char *layout_str;
+
+	blog(LOG_WARNING, "\"%s\" == \"%s\"?? ", var->type, "atomic_uint");
+
+	if (strcmp(var->type, "atomic_uint") == 0) {
+		blog(LOG_WARNING, "YES\n");
+		layout_str = bmalloc(64);
+		snprintf(layout_str, 64,
+			"layout (binding = %u, offset = %u) ",
+			var->layout_binding, var->layout_binding);
+		dstr_cat(&glsp->gl_string, layout_str);
+		bfree(layout_str);
+	} else {
+		blog(LOG_WARNING, "NO\n");
+	}
+
 	if (var->var_type == SHADER_VAR_UNIFORM)
 		dstr_cat(&glsp->gl_string, "uniform ");
 	else if (var->var_type == SHADER_VAR_CONST)

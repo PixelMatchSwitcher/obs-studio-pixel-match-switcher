@@ -734,9 +734,9 @@ static void sp_parse_other(struct shader_parser *sp)
 	char *type = NULL, *name = NULL;
 	unsigned int lo_binding = 0, lo_offset = 0;
 
-//	if (cf_token_is(&sp->cfp, "layout"))
-//		if (!sp_parse_layout(sp, &lo_binding, &lo_offset))
-//			goto error;
+	if (cf_token_is(&sp->cfp, "layout"))
+		if (!sp_parse_layout(sp, &lo_binding, &lo_offset))
+			goto error;
 
 	if (!sp_get_var_specifiers(sp, &is_const, &is_uniform))
 		goto error;
