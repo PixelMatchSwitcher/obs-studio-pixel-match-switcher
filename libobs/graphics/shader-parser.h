@@ -51,13 +51,9 @@ struct shader_var {
 	char *mapping;
 	enum shader_var_type var_type;
 	int array_count;
-	union {
-		size_t gl_sampler_id; /* optional: used/parsed by GL */
-		struct {
-			unsigned int layout_binding;
-			unsigned int layout_offset;
-		};
-	};
+	size_t gl_sampler_id; /* optional: used/parsed by GL */
+	unsigned int layout_binding;
+	unsigned int layout_offset;
 	DARRAY(uint8_t) default_val;
 };
 

@@ -590,7 +590,7 @@ static void program_get_result_data(struct gs_program *program,
 
 void program_get_results(struct gs_program *program)
 {
-	for (size_t i = 0; i < program->params.num; i++) {
+	for (size_t i = 0; i < program->results.num; i++) {
 		struct program_result *pr = program->results.array + i;
 		program_get_result_data(program, pr);
 	}
