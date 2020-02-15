@@ -1590,7 +1590,7 @@ static inline void ep_write_param(struct dstr *shader, struct ep_param *param,
 		layout_str = bmalloc(64);
 		snprintf(layout_str, 64,
 			"layout (binding = %u, offset = %u) ",
-			param->layout_binding, param->layout_binding);
+			param->layout_binding, param->layout_offset);
 		dstr_cat(shader, layout_str);
 		bfree(layout_str);
 	}

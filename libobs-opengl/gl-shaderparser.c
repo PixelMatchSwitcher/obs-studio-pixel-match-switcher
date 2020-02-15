@@ -704,7 +704,9 @@ static bool gl_shader_buildstring(struct gl_shader_parser *glsp)
 		return false;
 	}
 
-	dstr_copy(&glsp->gl_string, "#version 330\n\n");
+	dstr_copy(&glsp->gl_string, "#version 420\n\n");
+	//dstr_copy(&glsp->gl_string,
+    //          "#extension GL_ARB_shader_atomic_counters : enable\n\n");
 	dstr_cat(&glsp->gl_string, "const bool obs_glsl_compile = true;\n\n");
 	gl_write_params(glsp);
 	gl_write_inputs(glsp, main_func);
