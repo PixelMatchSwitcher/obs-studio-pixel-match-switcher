@@ -2011,6 +2011,35 @@ static bool ep_compile_pass_shaderparams(struct effect_parser *ep,
 	return true;
 }
 
+static bool ep_compilepass_prog_results(struct effect_parser *ep,
+					struct darray *pass_results,
+					gs_shader_t *shader)
+{
+	size_t i;
+	struct ep_param *param;
+	struct pass_programresult result;
+	const char *name;
+
+	for (i = 0; i < ep->params.num; i++) {
+		param = ep->params.array +  i;
+		name = param->name;
+		if (param->is_result) {
+			result.eresult =
+				gs_effect_get_result_by_name(ep->effect, name);
+			if (!result.eresult) {
+				blog(LOG_ERROR, "Effect result not found");
+				return false;
+			}
+			result.presult =
+				gs_shader_get_result_by_name(shader, name);
+			if (!result.presult) {
+				blog(LOG_ERROR, "Program result not found");
+				return false;
+			}
+		}
+	}
+}
+
 static inline bool ep_compile_pass_shader(struct effect_parser *ep,
 					  struct gs_effect_technique *tech,
 					  struct gs_effect_pass *pass,
@@ -2022,6 +2051,7 @@ static inline bool ep_compile_pass_shader(struct effect_parser *ep,
 	struct dstr location;
 	struct darray used_params;         /* struct dstr */
 	struct darray *pass_params = NULL; /* struct pass_shaderparam */
+	struct darray *pass_results = &pass_in->pass->program_results.da;
 	gs_shader_t *shader = NULL;
 	bool success = true;
 
@@ -2075,6 +2105,8 @@ static inline bool ep_compile_pass_shader(struct effect_parser *ep,
 						       &used_params, shader);
 	else
 		success = false;
+	if (success && type == GS_SHADER_PIXEL)
+		success = ep_compilepass_prog_results(ep, pass_results, shader);
 
 	dstr_free(&location);
 	dstr_array_free(used_params.array, used_params.num);

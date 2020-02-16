@@ -119,6 +119,11 @@ struct pass_shaderparam {
 	gs_sparam_t *sparam;
 };
 
+struct pass_programresult {
+	struct gs_effect_result *eresult;
+	gs_presult_t *presult;
+};
+
 struct gs_effect_pass {
 	char *name;
 	enum effect_section section;
@@ -127,6 +132,7 @@ struct gs_effect_pass {
 	gs_shader_t *pixelshader;
 	DARRAY(struct pass_shaderparam) vertshader_params;
 	DARRAY(struct pass_shaderparam) pixelshader_params;
+	DARRAY(struct pass_programresult) program_results;
 };
 
 static inline void effect_pass_init(struct gs_effect_pass *pass)
@@ -139,6 +145,7 @@ static inline void effect_pass_free(struct gs_effect_pass *pass)
 	bfree(pass->name);
 	da_free(pass->vertshader_params);
 	da_free(pass->pixelshader_params);
+	da_free(pass->program_results);
 
 	gs_shader_destroy(pass->vertshader);
 	gs_shader_destroy(pass->pixelshader);

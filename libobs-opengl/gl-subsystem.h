@@ -446,8 +446,11 @@ struct shader_attrib {
 	enum attrib_type type;
 };
 
+struct gs_program;
+
 struct gs_shader {
 	gs_device_t *device;
+	struct gs_program *program;
 	enum gs_shader_type type;
 	GLuint obj;
 
@@ -465,10 +468,6 @@ struct program_param {
 	struct gs_shader_param *param;
 };
 
-struct program_result {
-	struct gs_program_result *result;
-};
-
 struct gs_program {
 	gs_device_t *device;
 	GLuint obj;
@@ -476,7 +475,7 @@ struct gs_program {
 	struct gs_shader *pixel_shader;
 
 	DARRAY(struct program_param) params;
-	DARRAY(struct program_result) results;
+	DARRAY(struct gs_program_result) results;
 	DARRAY(GLint) attribs;
 
 	struct gs_program **prev_next;

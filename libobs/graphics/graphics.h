@@ -19,6 +19,7 @@
 
 #include "../util/bmem.h"
 #include "input.h"
+#include <util/darray.h>
 #ifdef __APPLE__
 #include <objc/objc-runtime.h>
 #endif
@@ -270,7 +271,7 @@ typedef struct gs_timer_range gs_timer_range_t;
 typedef struct gs_texture_render gs_texrender_t;
 typedef struct gs_shader gs_shader_t;
 typedef struct gs_shader_param gs_sparam_t;
-typedef struct gs_program_result gs_sresult_t;
+typedef struct gs_program_result gs_presult_t;
 typedef struct gs_effect gs_effect_t;
 typedef struct gs_effect_technique gs_technique_t;
 typedef struct gs_effect_pass gs_epass_t;
@@ -306,11 +307,6 @@ struct gs_shader_param_info {
 	const char *name;
 };
 
-struct gs_program_result_info {
-	enum gs_shader_param_type type;
-	const char *name;
-};
-
 enum gs_shader_type {
 	GS_SHADER_VERTEX,
 	GS_SHADER_PIXEL,
@@ -329,6 +325,10 @@ EXPORT gs_sparam_t *gs_shader_get_world_matrix(const gs_shader_t *shader);
 
 EXPORT void gs_shader_get_param_info(const gs_sparam_t *param,
 				     struct gs_shader_param_info *info);
+
+EXPORT gs_presult_t *gs_shader_get_result_by_name(gs_shader_t *shader,
+						  const char *name);
+
 EXPORT void gs_shader_set_bool(gs_sparam_t *param, bool val);
 EXPORT void gs_shader_set_float(gs_sparam_t *param, float val);
 EXPORT void gs_shader_set_int(gs_sparam_t *param, int val);
@@ -341,11 +341,12 @@ EXPORT void gs_shader_set_vec3(gs_sparam_t *param, const struct vec3 *val);
 EXPORT void gs_shader_set_vec4(gs_sparam_t *param, const struct vec4 *val);
 EXPORT void gs_shader_set_texture(gs_sparam_t *param, gs_texture_t *val);
 EXPORT void gs_shader_set_atomic_uint(gs_sparam_t *param, unsigned int val);
-EXPORT void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size);
 EXPORT void gs_shader_set_default(gs_sparam_t *param);
 EXPORT void gs_shader_set_next_sampler(gs_sparam_t *param,
 				       gs_samplerstate_t *sampler);
-EXPORT unsigned int gs_shader_get_uint(gs_sparam_t *param);
+EXPORT void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size);
+EXPORT void gs_shader_get_result(gs_presult_t *result, struct darray *dst);
+EXPORT unsigned int gs_shader_get_atomic_uint(gs_sparam_t *param);
 #endif
 
 /* ---------------------------------------------------

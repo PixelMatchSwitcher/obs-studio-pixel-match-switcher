@@ -170,6 +170,7 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(gs_shader_get_num_params);
 	GRAPHICS_IMPORT(gs_shader_get_param_by_idx);
 	GRAPHICS_IMPORT(gs_shader_get_param_by_name);
+	GRAPHICS_IMPORT(gs_shader_get_result_by_name);
 	GRAPHICS_IMPORT(gs_shader_get_viewproj_matrix);
 	GRAPHICS_IMPORT(gs_shader_get_world_matrix);
 	GRAPHICS_IMPORT(gs_shader_get_param_info);
@@ -186,6 +187,8 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(gs_shader_set_val);
 	GRAPHICS_IMPORT(gs_shader_set_default);
 	GRAPHICS_IMPORT(gs_shader_set_next_sampler);
+	GRAPHICS_IMPORT(gs_shader_get_result);
+	GRAPHICS_IMPORT(gs_shader_get_atomic_uint);
 
 	GRAPHICS_IMPORT_OPTIONAL(device_nv12_available);
 
