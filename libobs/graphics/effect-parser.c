@@ -2038,6 +2038,7 @@ static bool ep_compilepass_prog_results(struct effect_parser *ep,
 			}
 		}
 	}
+	return true;
 }
 
 static inline bool ep_compile_pass_shader(struct effect_parser *ep,
