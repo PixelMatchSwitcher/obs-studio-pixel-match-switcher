@@ -2012,7 +2012,7 @@ static bool ep_compile_pass_shaderparams(struct effect_parser *ep,
 }
 
 static bool ep_compilepass_prog_results(struct effect_parser *ep,
-					struct darray *pass_results,
+					struct gs_effect_pass *pass,
 					gs_shader_t *shader)
 {
 	size_t i;
@@ -2036,6 +2036,7 @@ static bool ep_compilepass_prog_results(struct effect_parser *ep,
 				blog(LOG_ERROR, "Program result not found");
 				return false;
 			}
+			da_push_back(pass->program_results, &result);
 		}
 	}
 	return true;
@@ -2107,7 +2108,7 @@ static inline bool ep_compile_pass_shader(struct effect_parser *ep,
 	else
 		success = false;
 	if (success && type == GS_SHADER_PIXEL)
-		success = ep_compilepass_prog_results(ep, pass_results, shader);
+		success = ep_compilepass_prog_results(ep, pass, shader);
 
 	dstr_free(&location);
 	dstr_array_free(used_params.array, used_params.num);

@@ -450,7 +450,6 @@ struct gs_program;
 
 struct gs_shader {
 	gs_device_t *device;
-	struct gs_program *program;
 	enum gs_shader_type type;
 	GLuint obj;
 

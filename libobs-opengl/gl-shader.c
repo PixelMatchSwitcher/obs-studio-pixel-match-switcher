@@ -416,9 +416,8 @@ gs_sparam_t *gs_shader_get_param_by_name(gs_shader_t *shader, const char *name)
 gs_presult_t *gs_shader_get_result_by_name(gs_shader_t *shader, const char *name)
 {
 	size_t i;
-	struct gs_program *program = shader->program;
-	for (i = 0; i < program->results.num; i++) {
-		struct gs_program_result *result = program->results.array + i;
+	for (i = 0; i < shader->results.num; i++) {
+		struct gs_program_result *result = shader->results.array + i;
 
 		if (strcmp(result->name, name) == 0)
 			return result;
@@ -742,8 +741,6 @@ static inline bool assign_program_params(struct gs_program *program)
 static bool assign_program_result(struct gs_program *program,
                                   struct gs_program_result* result)
 {
-	struct gs_program_result info;
-
 	if (result->type == GS_SHADER_PARAM_ATOMIC_UINT) {
 		glGenBuffers(1, &result->buffer_id);
 		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, result->buffer_id);
@@ -758,15 +755,15 @@ static bool assign_program_result(struct gs_program *program,
 		}
 	}
 
-	da_push_back(program->results, &info);
+	da_push_back(program->results, result);
 	return true;
 }
 
 static inline bool assign_program_shader_results(struct gs_program *program,
 					 	 struct gs_shader *shader)
 {
-	for (size_t i = 0; i < program->results.num; i++) {
-		struct gs_program_result *result = program->results.array + i;
+	for (size_t i = 0; i < shader->results.num; i++) {
+		struct gs_program_result *result = shader->results.array + i;
 		if (!assign_program_result(program, result))
 			return false;
 	}
@@ -790,10 +787,7 @@ struct gs_program *gs_program_create(struct gs_device *device)
 
 	program->device = device;
 	program->vertex_shader = device->cur_vertex_shader;
-	device->cur_vertex_shader->program = program;
 	program->pixel_shader = device->cur_pixel_shader;
-	device->cur_pixel_shader->program = program;
-
 
 	program->obj = glCreateProgram();
 	if (!gl_success("glCreateProgram"))
