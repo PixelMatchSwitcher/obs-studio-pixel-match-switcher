@@ -744,11 +744,10 @@ static void sp_parse_other(struct shader_parser *sp)
 
 	if (cf_get_name(&sp->cfp, &type, "type", ";") != PARSE_SUCCESS)
 		goto error;
+	if (strcmp(type, "atomic_uint") == 0)
+		is_result = true;
 	if (cf_next_name(&sp->cfp, &name, "name", ";") != PARSE_SUCCESS)
 		goto error;
-	if (cf_token_is(&sp->cfp, "atomic_uint")) {
-		is_result = true;
-	}
 
 	if (!cf_next_valid_token(&sp->cfp))
 		goto error;

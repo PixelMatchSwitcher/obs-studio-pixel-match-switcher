@@ -92,31 +92,21 @@ EXPORT void effect_param_parse_property(gs_eparam_t *param,
 
 struct gs_effect_result {
 	char *name;
-	enum effect_section section;
-
 	enum gs_shader_param_type type;
 	DARRAY(uint8_t) cur_val;
 	gs_effect_t *effect;
-
-	DARRAY(struct gs_effect_result) annotations;
 };
 
 static inline void effect_result_init(struct gs_effect_result *result)
 {
 	memset(result, 0, sizeof(struct gs_effect_result));
-	da_init(result->annotations);
+	da_init(result->cur_val);
 }
 
 static inline void effect_result_free(struct gs_effect_result *result)
 {
 	bfree(result->name);
 	da_free(result->cur_val);
-
-	size_t i;
-	for (i = 0; i < result->annotations.num; i++)
-		effect_result_free(result->annotations.array + i);
-
-	da_free(result->annotations);
 }
 
 EXPORT void effect_result_parse_property(gs_eresult_t *param,

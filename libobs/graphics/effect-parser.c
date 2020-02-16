@@ -1216,8 +1216,6 @@ static void ep_parse_param(struct effect_parser *ep,
 
 complete:
 	da_push_back(ep->params, &param);
-	if (is_result)
-		da_push_back(ep->results, &param);
 	return;
 
 error:
@@ -1846,8 +1844,6 @@ static inline void ep_reset_written(struct effect_parser *ep)
 	size_t i;
 	for (i = 0; i < ep->params.num; i++)
 		ep->params.array[i].written = false;
-	for (i = 0; i < ep->results.num; i++)
-		ep->results.array[i].written = false;
 	for (i = 0; i < ep->structs.num; i++)
 		ep->structs.array[i].written = false;
 	for (i = 0; i < ep->funcs.num; i++)
@@ -1935,6 +1931,19 @@ ep_compile_param_annotations(struct ep_param *ep_param_input,
 			       &(gs_effect_input->annotations.da), ep);
 }
 
+static void ep_compile_result(struct effect_parser *ep,
+			      struct ep_param *param_in)
+{
+	struct gs_effect_result result;
+	effect_result_init(&result);
+
+	result.name = bstrdup(param_in->name);
+	result.effect = ep->effect;
+	result.type = get_effect_param_type(param_in->type);
+
+	da_push_back(ep->effect->results, &result);
+}
+
 static void ep_compile_param(struct effect_parser *ep, size_t idx)
 {
 	struct gs_effect_param *param;
@@ -1961,21 +1970,10 @@ static void ep_compile_param(struct effect_parser *ep, size_t idx)
 #endif
 
 	ep_compile_param_annotations(param_in, param, ep);
-}
 
-static void ep_compile_result(struct effect_parser *ep, size_t idx)
-{
-	struct gs_effect_result *result;
-	struct ep_param *param_in;
+	if (param_in->is_result)
+		ep_compile_result(ep, param_in);
 
-	result = ep->effect->results.array + idx;
-	param_in = ep->results.array + idx;
-
-	result->name = bstrdup(param_in->name);
-	result->effect = ep->effect;
-	result->type = get_effect_param_type(param_in->type);
-
-	// TODO: compile annotations?
 }
 
 static bool ep_compile_pass_shaderparams(struct effect_parser *ep,
@@ -2156,8 +2154,8 @@ static bool ep_compile(struct effect_parser *ep)
 	assert(ep->effect);
 
 	da_resize(ep->effect->params, ep->params.num);
-	da_resize(ep->effect->results, ep->results.num);
 	da_resize(ep->effect->techniques, ep->techniques.num);
+	da_resize(ep->effect->results, 0);
 
 #if defined(_DEBUG) && defined(_DEBUG_SHADERS)
 	blog(LOG_DEBUG, "Shader has %lld parameters:", ep->params.num);
@@ -2166,17 +2164,15 @@ static bool ep_compile(struct effect_parser *ep)
 
 	for (i = 0; i < ep->params.num; i++)
 		ep_compile_param(ep, i);
-	for (i = 0; i < ep->results.num; i++)
-		ep_compile_result(ep, i);
+
 
 #if defined(_DEBUG) && defined(_DEBUG_SHADERS)
 	blog(LOG_DEBUG, "Shader has %lld techniques:", ep->techniques.num);
 #endif
 
-	for (i = 0; i < ep->techniques.num; i++) {
+	for (i = 0; i < ep->techniques.num; i++)
 		if (!ep_compile_technique(ep, i))
 			success = false;
-	}
 
 	return success;
 }

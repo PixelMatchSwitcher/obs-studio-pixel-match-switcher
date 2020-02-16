@@ -269,7 +269,6 @@ struct effect_parser {
 	gs_effect_t *effect;
 
 	DARRAY(struct ep_param) params;
-	DARRAY(struct ep_param) results;
 	DARRAY(struct ep_struct) structs;
 	DARRAY(struct ep_func) funcs;
 	DARRAY(struct ep_sampler) samplers;
@@ -286,7 +285,6 @@ struct effect_parser {
 static inline void ep_init(struct effect_parser *ep)
 {
 	da_init(ep->params);
-	da_init(ep->results);
 	da_init(ep->structs);
 	da_init(ep->funcs);
 	da_init(ep->samplers);
