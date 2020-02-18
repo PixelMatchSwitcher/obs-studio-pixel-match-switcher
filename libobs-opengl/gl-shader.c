@@ -558,7 +558,9 @@ static bool init_atomic_buffer(unsigned int *buffer_id,
 		return false;
 
 	glBufferData(GL_ATOMIC_COUNTER_BUFFER, (GLsizeiptr)sz, NULL,
-		     write ? GL_STATIC_COPY : GL_STATIC_READ);
+			     //write ? GL_STATIC_COPY : GL_STATIC_READ);
+			     GL_DYNAMIC_DRAW);
+
 	if (!gl_success("glBufferData"))
 		return false;
 
@@ -568,8 +570,9 @@ static bool init_atomic_buffer(unsigned int *buffer_id,
 		return false;
 
 	// verify this.
-	glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER,
-		binding, *buffer_id, offset, (GLsizeiptr)sz);
+	//glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER,
+	//	binding, *buffer_id, offset, (GLsizeiptr)sz);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, *buffer_id);
 	if (!gl_success("glBindBufferRange"))
 		return false;
 
@@ -657,16 +660,34 @@ static void program_set_param_data(struct gs_program *program,
 						sizeof(GLuint),
 						true))
 					return;
-
-
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
 				     pp->param->buffer_id);
 			gl_success("glBindBuffer");
 
+#if 0
 			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER,
 				0, sizeof(GLuint),
 				array);
 			gl_success("glBufferData");
+#else
+// declare a pointer to hold the values in the buffer
+                        GLuint *userCounters;
+// map the buffer, userCounters will point to the buffers data
+                        userCounters = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER,
+                                         0 ,
+                                         sizeof(GLuint),
+                                         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT
+                                         );
+                        gl_success("glMapBufferRange");
+
+                        //if (userCounters) {
+                                memcpy(userCounters, array, sizeof(GLuint));
+                        //}
+
+                        glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
+                        gl_success("glBindBuffer");
+
+#endif
 
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 		}
@@ -696,6 +717,7 @@ static void program_get_result_data(struct gs_program *program,
 					pr->layout_binding, pr->layout_offset,
 					sizeof(GLuint), false))
 				return;
+		return;
 
 		array = pr->cur_value.array;
 		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
