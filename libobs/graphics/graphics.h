@@ -251,7 +251,7 @@ struct gs_swap_chain;
 struct gs_timer;
 struct gs_texrender;
 struct gs_shader_param;
-struct gs_program_result;
+struct gs_shader_result;
 struct gs_effect;
 struct gs_effect_technique;
 struct gs_effect_pass;
@@ -271,7 +271,7 @@ typedef struct gs_timer_range gs_timer_range_t;
 typedef struct gs_texture_render gs_texrender_t;
 typedef struct gs_shader gs_shader_t;
 typedef struct gs_shader_param gs_sparam_t;
-typedef struct gs_program_result gs_presult_t;
+typedef struct gs_shader_result gs_sresult_t;
 typedef struct gs_effect gs_effect_t;
 typedef struct gs_effect_technique gs_technique_t;
 typedef struct gs_effect_pass gs_epass_t;
@@ -326,7 +326,7 @@ EXPORT gs_sparam_t *gs_shader_get_world_matrix(const gs_shader_t *shader);
 EXPORT void gs_shader_get_param_info(const gs_sparam_t *param,
 				     struct gs_shader_param_info *info);
 
-EXPORT gs_presult_t *gs_shader_get_result_by_name(gs_shader_t *shader,
+EXPORT gs_sresult_t *gs_shader_get_result_by_name(gs_shader_t *shader,
 						  const char *name);
 
 EXPORT void gs_shader_set_bool(gs_sparam_t *param, bool val);
@@ -345,7 +345,7 @@ EXPORT void gs_shader_set_default(gs_sparam_t *param);
 EXPORT void gs_shader_set_next_sampler(gs_sparam_t *param,
 				       gs_samplerstate_t *sampler);
 EXPORT void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size);
-EXPORT void gs_shader_get_result(gs_presult_t *result, struct darray *dst);
+EXPORT void gs_shader_get_result(gs_sresult_t *result, struct darray *dst);
 EXPORT unsigned int gs_shader_get_atomic_uint(gs_sparam_t *param);
 #endif
 

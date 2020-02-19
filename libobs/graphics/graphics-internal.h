@@ -243,7 +243,7 @@ struct gs_exports {
 	gs_sparam_t *(*gs_shader_get_world_matrix)(const gs_shader_t *shader);
 	void (*gs_shader_get_param_info)(const gs_sparam_t *param,
 					 struct gs_shader_param_info *info);
-	gs_presult_t *(*gs_shader_get_result_by_name)(gs_shader_t *program,
+	gs_sresult_t *(*gs_shader_get_result_by_name)(gs_shader_t *program,
 						      const char *name);
 	void (*gs_shader_set_bool)(gs_sparam_t *param, bool val);
 	void (*gs_shader_set_float)(gs_sparam_t *param, float val);
@@ -262,7 +262,7 @@ struct gs_exports {
 	void (*gs_shader_set_default)(gs_sparam_t *param);
 	void (*gs_shader_set_next_sampler)(gs_sparam_t *param,
 					   gs_samplerstate_t *sampler);
-	void (*gs_shader_get_result)(gs_presult_t *param, struct darray* dst);
+	void (*gs_shader_get_result)(gs_sresult_t *param, struct darray* dst);
 	unsigned int (*gs_shader_get_atomic_uint)(gs_sparam_t *param);
 
 

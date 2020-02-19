@@ -200,10 +200,10 @@ static inline void download_results(struct gs_effect *effect)
 		return;
 	results = &effect->cur_pass->program_results.da;
 	for (i = 0; i < results->num; i++) {
-		struct pass_programresult *result =
-			 darray_item(sizeof(struct pass_programresult), results, i);
+		struct pass_shaderresult *result =
+			 darray_item(sizeof(struct pass_shaderresult), results, i);
 		struct gs_effect_result *eresult = result->eresult;
-		gs_presult_t *presult = result->presult;
+		gs_sresult_t *presult = result->sresult;
 		gs_shader_get_result(presult, &eresult->cur_val.da);
 	}
 

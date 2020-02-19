@@ -2083,7 +2083,7 @@ gs_sparam_t *gs_shader_get_param_by_name(gs_shader_t *shader, const char *name)
 	return graphics->exports.gs_shader_get_param_by_name(shader, name);
 }
 
-gs_presult_t *gs_shader_get_result_by_name(gs_shader_t *shader,
+gs_sresult_t *gs_shader_get_result_by_name(gs_shader_t *shader,
 					   const char *name)
 {
 	graphics_t *graphics = thread_graphics;
@@ -2245,7 +2245,7 @@ void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 	graphics->exports.gs_shader_set_val(param, val, size);
 }
 
-void gs_shader_get_result(gs_presult_t *result, struct darray *dst)
+void gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
 {
 	graphics_t *graphics = thread_graphics;
 

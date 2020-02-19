@@ -119,9 +119,9 @@ struct pass_shaderparam {
 	gs_sparam_t *sparam;
 };
 
-struct pass_programresult {
+struct pass_shaderresult {
 	struct gs_effect_result *eresult;
-	gs_presult_t *presult;
+	gs_sresult_t *sresult;
 };
 
 struct gs_effect_pass {

@@ -411,6 +411,7 @@ struct gs_shader_param {
 	GLuint buffer_id;
 	unsigned int layout_binding;
 	unsigned int layout_offset;
+	bool is_result;
 
 	int array_count;
 
@@ -421,7 +422,7 @@ struct gs_shader_param {
 	bool changed;
 };
 
-struct gs_program_result {
+struct gs_shader_result {
 	char *name;
 	struct gs_shader_param *param;
 	DARRAY(uint8_t) cur_value;
@@ -454,7 +455,7 @@ struct gs_shader {
 
 	DARRAY(struct shader_attrib) attribs;
 	DARRAY(struct gs_shader_param) params;
-	DARRAY(struct gs_program_result) results;
+	DARRAY(struct gs_shader_result) results;
 	DARRAY(gs_samplerstate_t *) samplers;
 };
 
@@ -470,7 +471,7 @@ struct gs_program {
 	struct gs_shader *pixel_shader;
 
 	DARRAY(struct program_param) params;
-	DARRAY(struct gs_program_result) results;
+	DARRAY(struct gs_shader_result) results;
 	DARRAY(GLint) attribs;
 
 	struct gs_program **prev_next;

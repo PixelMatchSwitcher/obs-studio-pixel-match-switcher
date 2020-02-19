@@ -1931,19 +1931,6 @@ ep_compile_param_annotations(struct ep_param *ep_param_input,
 			       &(gs_effect_input->annotations.da), ep);
 }
 
-static void ep_compile_result(struct effect_parser *ep,
-			      struct ep_param *param_in)
-{
-	struct gs_effect_result result;
-	effect_result_init(&result);
-
-	result.name = bstrdup(param_in->name);
-	result.effect = ep->effect;
-	result.type = get_effect_param_type(param_in->type);
-
-	da_push_back(ep->effect->results, &result);
-}
-
 static void ep_compile_param(struct effect_parser *ep, size_t idx)
 {
 	struct gs_effect_param *param;
@@ -1970,10 +1957,6 @@ static void ep_compile_param(struct effect_parser *ep, size_t idx)
 #endif
 
 	ep_compile_param_annotations(param_in, param, ep);
-
-	if (param_in->is_result)
-		ep_compile_result(ep, param_in);
-
 }
 
 static bool ep_compile_pass_shaderparams(struct effect_parser *ep,
@@ -2011,34 +1994,40 @@ static bool ep_compile_pass_shaderparams(struct effect_parser *ep,
 	return true;
 }
 
-static bool ep_compilepass_prog_results(struct effect_parser *ep,
-					struct gs_effect_pass *pass,
-					gs_shader_t *shader)
+static bool ep_compilepass_shader_results(struct effect_parser *ep,
+					  struct darray *pass_results,
+					  struct darray *used_params,
+					  gs_shader_t *shader)
 {
 	size_t i;
-	struct ep_param *param;
-	struct pass_programresult result;
-	const char *name;
 
-	for (i = 0; i < ep->params.num; i++) {
-		param = ep->params.array +  i;
-		name = param->name;
-		if (param->is_result) {
-			result.eresult =
-				gs_effect_get_result_by_name(ep->effect, name);
-			if (!result.eresult) {
-				blog(LOG_ERROR, "Effect result not found");
-				return false;
-			}
-			result.presult =
-				gs_shader_get_result_by_name(shader, name);
-			if (!result.presult) {
-				blog(LOG_ERROR, "Program result not found");
-				return false;
-			}
-			da_push_back(pass->program_results, &result);
+	for (i = 0; i < used_params->num; i++) {
+		struct dstr *param_str =
+			darray_item(sizeof(struct dstr), used_params, i);
+		const char *param_name = param_str->array;
+		gs_sresult_t *sresult =
+			gs_shader_get_result_by_name(shader, param_name);
+
+		if (!sresult)
+			continue;
+
+		struct pass_shaderresult mapping;
+		mapping.sresult = sresult;
+		mapping.eresult =
+			 gs_effect_get_result_by_name(ep->effect, param_name);
+		if (!mapping.eresult) {
+			blog(LOG_ERROR, "Effect result not found");
+			return false;
 		}
+
+		darray_push_back(sizeof(struct pass_shaderresult), pass_results,
+				 &mapping);
+
+#if defined(_DEBUG) && defined(_DEBUG_SHADERS)
+		debug_param(param->eparam, 0, i, "\t\t\t\t");
+#endif
 	}
+
 	return true;
 }
 
@@ -2107,8 +2096,9 @@ static inline bool ep_compile_pass_shader(struct effect_parser *ep,
 						       &used_params, shader);
 	else
 		success = false;
-	if (success && type == GS_SHADER_PIXEL)
-		success = ep_compilepass_prog_results(ep, pass, shader);
+	if (success)
+		success = ep_compilepass_shader_results(ep, pass_results,
+						        &used_params, shader);
 
 	dstr_free(&location);
 	dstr_array_free(used_params.array, used_params.num);
