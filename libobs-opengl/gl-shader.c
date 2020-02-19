@@ -72,6 +72,18 @@ static void gl_get_shader_info(GLuint shader, const char *file,
 		bfree(errors);
 }
 
+static bool gl_add_result(struct gs_shader *shader,
+			  struct gs_shader_param *param)
+{
+	struct gs_program_result result;
+	result.param = NULL;
+	result.name = param->name;
+	da_init(result.cur_value);
+	da_push_back(shader->results, &result);
+
+	return true;
+}
+
 static bool gl_add_param(struct gs_shader *shader, struct shader_var *var,
 			 GLint *texture_id)
 {
@@ -99,6 +111,10 @@ static bool gl_add_param(struct gs_shader *shader, struct shader_var *var,
 	da_copy(param.cur_value, param.def_value);
 
 	da_push_back(shader->params, &param);
+
+	if (var->is_result)
+		return gl_add_result(shader, da_end(shader->params));
+
 	return true;
 }
 
@@ -116,37 +132,6 @@ static inline bool gl_add_params(struct gs_shader *shader,
 	shader->viewproj = gs_shader_get_param_by_name(shader, "ViewProj");
 	shader->world = gs_shader_get_param_by_name(shader, "World");
 
-	return true;
-}
-
-static bool gl_add_result(struct gs_shader *shader, struct shader_var *var)
-{
-	struct gs_program_result result;
-	result.type = get_shader_param_type(var->type);
-	result.name = bstrdup(var->name);
-	result.buffer_id = GL_INVALID_VALUE;
-	if (result.type == GS_SHADER_PARAM_ATOMIC_UINT) {
-		result.layout_binding = var->layout_binding;
-		result.layout_offset = var->layout_offset;
-	}
-	da_init(result.cur_value);
-	da_push_back(shader->results, &result);
-
-	return true;
-}
-
-
-static inline bool gl_add_results(struct gs_shader *shader,
-				  struct gl_shader_parser *glsp)
-{
-	size_t i;
-
-	for (i = 0; i < glsp->parser.params.num; i++) {
-		struct shader_var *var = glsp->parser.params.array + i;
-		if (var->is_result)
-			if (!gl_add_result(shader, glsp->parser.params.array + i))
-				return false;
-	}
 	return true;
 }
 
@@ -286,8 +271,7 @@ static bool gl_shader_init(struct gs_shader *shader,
 
 	if (success)
 		success = gl_add_params(shader, glsp);
-	if (success)
-		success = gl_add_results(shader, glsp);
+
 	/* Only vertex shaders actually require input attributes */
 	if (success && shader->type == GS_SHADER_VERTEX)
 		success = gl_process_attribs(shader, glsp);
@@ -431,7 +415,7 @@ gs_presult_t *gs_shader_get_result_by_name(gs_shader_t *shader, const char *name
 	for (i = 0; i < shader->results.num; i++) {
 		struct gs_program_result *result = shader->results.array + i;
 
-		if (strcmp(result->name, name) == 0)
+		if (strcmp(result->param->name, name) == 0)
 			return result;
 	}
 
@@ -537,7 +521,7 @@ static inline bool validate_result(struct gs_program_result *pr,
 		blog(LOG_ERROR,
 		     "Result '%s' set to invalid size %u, "
 		     "expected %u",
-		     pr->name, (unsigned int)pr->cur_value.num,
+		     pr->param->name, (unsigned int)pr->cur_value.num,
 		     (unsigned int)expected_size);
 		return false;
 	}
@@ -545,9 +529,8 @@ static inline bool validate_result(struct gs_program_result *pr,
 	return true;
 }
 
-static bool init_atomic_buffer(unsigned int *buffer_id,
-			       unsigned int binding, unsigned int offset,
-			       size_t sz, bool write)
+static bool init_atomic_buffer(unsigned int *buffer_id, size_t sz,
+			       unsigned int binding, unsigned int offset)
 {
 	glGenBuffers(1, buffer_id);
 	if (!gl_success("glGenBuffers"))
@@ -558,25 +541,20 @@ static bool init_atomic_buffer(unsigned int *buffer_id,
 		return false;
 
 	glBufferData(GL_ATOMIC_COUNTER_BUFFER, (GLsizeiptr)sz, NULL,
-			     //write ? GL_STATIC_COPY : GL_STATIC_READ);
-			     GL_DYNAMIC_DRAW);
-
+		     GL_DYNAMIC_DRAW);
 	if (!gl_success("glBufferData"))
 		return false;
 
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-
-	if (*buffer_id == GL_INVALID_VALUE)
+	if (!gl_success("glBindBuffer") || *buffer_id == GL_INVALID_VALUE)
 		return false;
 
-	// verify this.
-	//glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER,
-	//	binding, *buffer_id, offset, (GLsizeiptr)sz);
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, *buffer_id);
-	if (!gl_success("glBindBufferRange"))
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, binding, *buffer_id);
+	if (!gl_success("glBindBufferBase"))
 		return false;
 
 	return true;
+	UNUSED_PARAMETER(offset);
 }
 
 static void program_set_param_data(struct gs_program *program,
@@ -655,20 +633,23 @@ static void program_set_param_data(struct gs_program *program,
 			if (pp->param->buffer_id == GL_INVALID_VALUE)
 				if (!init_atomic_buffer(
 						&pp->param->buffer_id,
-						pp->param->layout_binding,
-						pp->param->layout_offset,
 						sizeof(GLuint),
-						true))
+						pp->param->layout_binding,
+						pp->param->layout_offset))
 					return;
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
 				     pp->param->buffer_id);
-			gl_success("glBindBuffer");
+			if (!gl_success("glBindBuffer"))
+				goto unbind;
 
-			glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, pp->param->buffer_id);
-			gl_success("glBindBufferRange");
+			glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER,
+					 pp->param->layout_binding,
+					 pp->param->buffer_id);
+			if (!gl_success("glBindBufferBase"))
+				goto unbind;
 
-		// declare a pointer to hold the values in the buffer
 #if 0
+			// variant using glMapBufferRange
 			GLuint *userCounters =
 				 (GLuint*)glMapBufferRange(
 						GL_ATOMIC_COUNTER_BUFFER,
@@ -676,16 +657,18 @@ static void program_set_param_data(struct gs_program *program,
 						GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT
 						);
 			if (!gl_success("glMapBufferRange") || !userCounters)
-				return;
+				goto unbind;
 
 			memcpy(userCounters, array, sizeof(GLuint));
 
 			glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
 			gl_success("glBindBuffer");
 #else
+			// variant using glBufferSubData
 			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), 				array);
+			gl_success("glBufferSubData");
 #endif
-
+		unbind:
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 		}
 	}
@@ -700,33 +683,49 @@ void program_update_params(struct gs_program *program)
 }
 
 static void program_get_result_data(struct gs_program *program,
-				    struct gs_program_result *pr)
+				    struct gs_program_result *result)
 {
+	struct gs_shader_param *param = result->param;
 	void *array;
 	unsigned int test = 0;
 
-	if(pr->type == GS_SHADER_PARAM_ATOMIC_UINT) {
-		if (pr->cur_value.num != sizeof(GLuint))
-			da_resize(pr->cur_value, sizeof(GLuint));
+	if(param->type == GS_SHADER_PARAM_ATOMIC_UINT) {
+		if (param->cur_value.num != sizeof(GLuint))
+			da_resize(param->cur_value, sizeof(GLuint));
 
-		if (pr->buffer_id == GL_INVALID_VALUE)
-			if (!init_atomic_buffer(&pr->buffer_id,
-					pr->layout_binding, pr->layout_offset,
-					sizeof(GLuint), false))
+		if (param->buffer_id == GL_INVALID_VALUE)
+			if (!init_atomic_buffer(&param->buffer_id,
+						sizeof(GLuint),
+						param->layout_binding,
+						param->layout_offset))
 				return;
 
-		array = pr->cur_value.array;
+		array = result->cur_value.array;
 		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
-			     pr->buffer_id);
-		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, pr->buffer_id);
+			     param->buffer_id);
+		if (!gl_success("glBindBuffer"))
+			goto unbind;
+
+		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER,
+				 param->layout_binding, param->buffer_id);
+		if (!gl_success("glBindBufferBase"))
+			goto unbind;
+
 		glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER,
 				   0,
 				   sizeof(GLuint), array);
-		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+		if (!gl_success("glGetBufferSubData"))
+			goto unbind;
 
 		test = *(unsigned int*)array;
+
+	unbind:
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 	}
+
 	UNUSED_PARAMETER(program);
+	UNUSED_PARAMETER(test);
+
 }
 
 void program_get_results(struct gs_program *program)

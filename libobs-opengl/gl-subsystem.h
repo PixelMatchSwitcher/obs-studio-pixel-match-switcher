@@ -422,12 +422,8 @@ struct gs_shader_param {
 };
 
 struct gs_program_result {
-	enum gs_shader_param_type type;
 	char *name;
-	GLuint buffer_id;
-	unsigned int layout_binding;
-	unsigned int layout_offset;
-	int array_count;
+	struct gs_shader_param *param;
 	DARRAY(uint8_t) cur_value;
 };
 
