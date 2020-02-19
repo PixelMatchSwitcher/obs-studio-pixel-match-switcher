@@ -132,7 +132,7 @@ struct gs_effect_pass {
 	gs_shader_t *pixelshader;
 	DARRAY(struct pass_shaderparam) vertshader_params;
 	DARRAY(struct pass_shaderparam) pixelshader_params;
-	DARRAY(struct pass_programresult) program_results;
+	DARRAY(struct pass_shaderresult) program_results;
 };
 
 static inline void effect_pass_init(struct gs_effect_pass *pass)

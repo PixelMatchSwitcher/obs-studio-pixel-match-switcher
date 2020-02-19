@@ -2011,6 +2011,11 @@ static bool ep_compilepass_shader_results(struct effect_parser *ep,
 		if (!sresult)
 			continue;
 
+		struct gs_effect_result eresult;
+		effect_result_init(&eresult);
+		eresult.name = strdup(param_name);
+		eresult.type =
+
 		struct pass_shaderresult mapping;
 		mapping.sresult = sresult;
 		mapping.eresult =
@@ -2179,7 +2184,6 @@ static bool ep_compile(struct effect_parser *ep)
 
 	da_resize(ep->effect->params, ep->params.num);
 	da_resize(ep->effect->techniques, ep->techniques.num);
-	da_resize(ep->effect->results, 0);
 
 #if defined(_DEBUG) && defined(_DEBUG_SHADERS)
 	blog(LOG_DEBUG, "Shader has %lld parameters:", ep->params.num);
