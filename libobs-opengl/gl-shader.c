@@ -522,11 +522,7 @@ static bool init_atomic_buffer(unsigned int *buffer_id, size_t sz,
 			       unsigned int binding, unsigned int offset)
 {
 	glGenBuffers(1, buffer_id);
-	if (!gl_success("glGenBuffers"))
-		return false;
-
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, binding, *buffer_id);
-	if (!gl_success("glBindBufferBase"))
+	if (!gl_success("glGenBuffers") || *buffer_id == GL_INVALID_VALUE)
 		return false;
 
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, *buffer_id);
@@ -539,7 +535,11 @@ static bool init_atomic_buffer(unsigned int *buffer_id, size_t sz,
 		return false;
 
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-	if (!gl_success("glBindBuffer") || *buffer_id == GL_INVALID_VALUE)
+	if (!gl_success("glBindBuffer"))
+		return false;
+
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, binding, *buffer_id);
+	if (!gl_success("glBindBufferBase"))
 		return false;
 
 	return true;
@@ -632,35 +632,12 @@ static void program_set_param_data(struct gs_program *program,
 			if (!gl_success("glBindBuffer"))
 				goto unbind;
 
-			glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER,
-					 pp->param->layout_binding,
-					 pp->param->buffer_id);
-			if (!gl_success("glBindBufferBase"))
-				goto unbind;
-
-#if 0
-			// variant using glMapBufferRange
-			GLuint *userCounters =
-				 (GLuint*)glMapBufferRange(
-						GL_ATOMIC_COUNTER_BUFFER,
-						0 , sizeof(GLuint),
-						GL_MAP_WRITE_BIT// | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT
-						);
-			if (!gl_success("glMapBufferRange") || !userCounters)
-				goto unbind;
-
-			GLuint test = 0xff;
-			memcpy(userCounters, &test, sizeof(GLuint));
-
-			glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
-			gl_success("glBindBuffer");
-#else
 			// variant using glBufferSubData
-			GLuint test = 0xFFFF;
+			GLuint test = 0xFFFFFF00;
 			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
 					sizeof(GLuint), &test);
 			gl_success("glBufferSubData");
-#endif
+
 		unbind:
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 		}
