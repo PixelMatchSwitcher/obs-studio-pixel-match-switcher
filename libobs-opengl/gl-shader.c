@@ -654,7 +654,8 @@ static void program_set_param_data(struct gs_program *program,
 			gl_success("glBindBuffer");
 #else
 			// variant using glBufferSubData
-			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), 				array);
+			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
+					sizeof(GLuint), array);
 			gl_success("glBufferSubData");
 #endif
 		unbind:
