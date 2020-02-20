@@ -525,21 +525,21 @@ static bool init_atomic_buffer(unsigned int *buffer_id, size_t sz,
 	if (!gl_success("glGenBuffers"))
 		return false;
 
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, binding, *buffer_id);
+	if (!gl_success("glBindBufferBase"))
+		return false;
+
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, *buffer_id);
 	if (!gl_success("glGenBuffers"))
 		return false;
 
 	glBufferData(GL_ATOMIC_COUNTER_BUFFER, (GLsizeiptr)sz, NULL,
-		     GL_DYNAMIC_DRAW);
+		     GL_DYNAMIC_COPY);
 	if (!gl_success("glBufferData"))
 		return false;
 
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 	if (!gl_success("glBindBuffer") || *buffer_id == GL_INVALID_VALUE)
-		return false;
-
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, binding, *buffer_id);
-	if (!gl_success("glBindBufferBase"))
 		return false;
 
 	return true;
@@ -626,6 +626,7 @@ static void program_set_param_data(struct gs_program *program,
 						pp->param->layout_binding,
 						pp->param->layout_offset))
 					return;
+
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
 				     pp->param->buffer_id);
 			if (!gl_success("glBindBuffer"))
@@ -643,19 +644,21 @@ static void program_set_param_data(struct gs_program *program,
 				 (GLuint*)glMapBufferRange(
 						GL_ATOMIC_COUNTER_BUFFER,
 						0 , sizeof(GLuint),
-						GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT
+						GL_MAP_WRITE_BIT// | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT
 						);
 			if (!gl_success("glMapBufferRange") || !userCounters)
 				goto unbind;
 
-			memcpy(userCounters, array, sizeof(GLuint));
+			GLuint test = 0xff;
+			memcpy(userCounters, &test, sizeof(GLuint));
 
 			glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
 			gl_success("glBindBuffer");
 #else
 			// variant using glBufferSubData
+			GLuint test = 0xFFFF;
 			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
-					sizeof(GLuint), array);
+					sizeof(GLuint), &test);
 			gl_success("glBufferSubData");
 #endif
 		unbind:
@@ -689,6 +692,7 @@ static void program_get_result_data(struct gs_program *program,
 						param->layout_binding,
 						param->layout_offset))
 				return;
+		return;
 
 		if (result->cur_value.num != sizeof(GLuint))
 			da_resize(result->cur_value, sizeof(GLuint));
