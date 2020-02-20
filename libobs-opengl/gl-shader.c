@@ -689,7 +689,10 @@ static void program_get_result_data(struct gs_program *program,
 						param->layout_offset))
 				return;
 
+		if (result->cur_value.num != sizeof(GLuint))
+			da_resize(result->cur_value, sizeof(GLuint));
 		array = result->cur_value.array;
+
 		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
 			     param->buffer_id);
 		if (!gl_success("glBindBuffer"))
