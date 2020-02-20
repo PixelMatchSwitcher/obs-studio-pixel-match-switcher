@@ -632,7 +632,6 @@ static void program_set_param_data(struct gs_program *program,
 			if (!gl_success("glBindBuffer"))
 				goto unbind;
 
-			// variant using glBufferSubData
 			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
 					sizeof(GLuint), array);
 			gl_success("glBufferSubData");
@@ -668,8 +667,6 @@ static void program_get_result_data(struct gs_program *program,
 						param->layout_binding,
 						param->layout_offset))
 				return;
-		return;
-
 		if (result->cur_value.num != sizeof(GLuint))
 			da_resize(result->cur_value, sizeof(GLuint));
 		array = result->cur_value.array;
@@ -677,11 +674,6 @@ static void program_get_result_data(struct gs_program *program,
 		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER,
 			     param->buffer_id);
 		if (!gl_success("glBindBuffer"))
-			goto unbind;
-
-		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER,
-				 param->layout_binding, param->buffer_id);
-		if (!gl_success("glBindBufferBase"))
 			goto unbind;
 
 		glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER,
