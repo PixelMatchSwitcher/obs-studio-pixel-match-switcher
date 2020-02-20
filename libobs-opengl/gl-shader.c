@@ -633,9 +633,8 @@ static void program_set_param_data(struct gs_program *program,
 				goto unbind;
 
 			// variant using glBufferSubData
-			GLuint test = 0xFFFFFF00;
 			glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0,
-					sizeof(GLuint), &test);
+					sizeof(GLuint), array);
 			gl_success("glBufferSubData");
 
 		unbind:
