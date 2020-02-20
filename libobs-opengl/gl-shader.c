@@ -682,8 +682,6 @@ static void program_get_result_data(struct gs_program *program,
 		if (!gl_success("glGetBufferSubData"))
 			goto unbind;
 
-		test = *(unsigned int*)array;
-
 	unbind:
 		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 	}
@@ -696,8 +694,8 @@ static void program_get_result_data(struct gs_program *program,
 void program_get_results(struct gs_program *program)
 {
 	for (size_t i = 0; i < program->results.num; i++) {
-		struct gs_shader_result *pr = program->results.array + i;
-		program_get_result_data(program, pr);
+		struct program_result *pr = program->results.array + i;
+		program_get_result_data(program, pr->result);
 	}
 }
 
@@ -757,13 +755,10 @@ static bool assign_program_param(struct gs_program *program,
 {
 	struct program_param info;
 
-	info.obj = glGetUniformLocation(program->obj, param->name);
-	if (!gl_success("glGetUniformLocation"))
-		return false;
-
-	if (info.obj == -1
-	&& param->type != GS_SHADER_PARAM_ATOMIC_UINT) {
-		return true;
+	if (param->type != GS_SHADER_PARAM_ATOMIC_UINT) {
+		info.obj = glGetUniformLocation(program->obj, param->name);
+		if (!gl_success("glGetUniformLocation"))
+			return false;
 	}
 
 	info.param = param;
@@ -799,13 +794,18 @@ static bool assign_program_shader_results(struct gs_program *program,
 {
 	struct gs_shader_result *result;
 	struct gs_shader_param *param;
+	struct program_result info;
 
 	size_t i;
 	for (i = 0; i < shader->results.num; i++) {
 		result = shader->results.array + i;
+
 		param = gs_shader_get_param_by_name(shader, result->name);
 		result->param = param;
-		da_push_back(program->results, result);
+
+		info.result = result;
+
+		da_push_back(program->results, &info);
 	}
 
 	return true;

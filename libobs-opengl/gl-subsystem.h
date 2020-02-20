@@ -464,6 +464,10 @@ struct program_param {
 	struct gs_shader_param *param;
 };
 
+struct program_result {
+	struct gs_shader_result *result;
+};
+
 struct gs_program {
 	gs_device_t *device;
 	GLuint obj;
@@ -471,7 +475,7 @@ struct gs_program {
 	struct gs_shader *pixel_shader;
 
 	DARRAY(struct program_param) params;
-	DARRAY(struct gs_shader_result) results;
+	DARRAY(struct program_result) results;
 	DARRAY(GLint) attribs;
 
 	struct gs_program **prev_next;
