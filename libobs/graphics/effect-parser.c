@@ -1596,9 +1596,12 @@ static inline void ep_write_param(struct dstr *shader, struct ep_param *param,
 
 		dstr_cat(shader, "uniform ");
 
-		if (param->is_result)
+		if (param->is_result) {
+			struct dstr newResStr;
+			dstr_init_copy(&newResStr, param->name);
 			darray_push_back(sizeof(struct dstr), used_results,
-					 &new);
+					 &newResStr);
+		}
 	}
 
 	dstr_cat(shader, param->type);
@@ -2005,10 +2008,10 @@ static bool ep_compile_pass_shaderparams(struct effect_parser *ep,
 	return true;
 }
 
-static struct gs_effect_result *ep_compile_result(struct effect_parser *ep,
-						  const char *result_name)
+bool ep_compile_result(struct gs_effect_result *result,
+			const char *result_name,
+			struct effect_parser *ep)
 {
-	struct gs_effect_result result;
 	struct ep_param *param_in = NULL, *param_temp;
 	size_t i;
 
@@ -2019,15 +2022,16 @@ static struct gs_effect_result *ep_compile_result(struct effect_parser *ep,
 			break;
 		}
 	}
-	if (!param_in)
-		return NULL;
+	if (!param_in) {
+		blog(LOG_ERROR, "parameter not found for a result");
+		return false;
+	}
 
-	effect_result_init(&result);
-	result.name = bstrdup(param_in->name);
-	result.type = get_effect_param_type(param_in->type);
+	effect_result_init(result);
+	result->name = bstrdup(param_in->name);
+	result->type = get_effect_param_type(param_in->type);
 
-	da_push_back(ep->effect->results, &result);
-	return da_end(ep->effect->results);
+	return true;
 }
 
 
@@ -2037,30 +2041,37 @@ static bool ep_compilepass_shaderresults(struct effect_parser *ep,
 					  gs_shader_t *shader)
 {
 	size_t i;
-	struct dstr *result_dstr;
-	const char *result_name;
-	darray_init(pass_results);
+	darray_resize(sizeof(struct pass_shaderresult), pass_results,
+		      used_results->num);
+	da_init(ep->effect->results);
+	da_resize(ep->effect->results, used_results->num);
 
 	for (i = 0; i < used_results->num; i++) {
-		gs_sresult_t *sresult;
+		struct dstr *result_dstr;
+		const char *result_name;
+		struct pass_shaderresult *mapping;
 		struct gs_effect_result *eresult;
-		struct pass_shaderresult mapping;
+		gs_sresult_t *sresult;
 
 		result_dstr = darray_item(sizeof(struct dstr), used_results, i);
 		result_name = result_dstr->array;
 
 		sresult = gs_shader_get_result_by_name(shader, result_name);
-		if (!sresult)
-			continue; // TODO: log?
+		if (!sresult) {
+			blog(LOG_ERROR, "Effect shader result not found");
+			return false;
+		}
 
-		eresult = ep_compile_result(ep, result_name);
-		if (!eresult)
-			continue; // TODO: log?
+		eresult = ep->effect->results.array + i;
+		if (!ep_compile_result(eresult, result_name, ep)) {
+			blog(LOG_ERROR, "Failed to compile effect result");
+			return false;
+		}
 
-		mapping.sresult = sresult;
-		mapping.eresult = eresult;
-		darray_push_back(sizeof(struct pass_shaderresult), pass_results,
-				 &mapping);
+		mapping = darray_item(sizeof(struct pass_shaderresult),
+				      pass_results, i);
+		mapping->sresult = sresult;
+		mapping->eresult = eresult;
 	}
 
 	return true;
@@ -2139,6 +2150,8 @@ static inline bool ep_compile_pass_shader(struct effect_parser *ep,
 	dstr_free(&location);
 	dstr_array_free(used_params.array, used_params.num);
 	darray_free(&used_params);
+	dstr_array_free(used_results.array, used_results.num);
+	darray_free(&used_results);
 	dstr_free(&shader_str);
 
 	return success;

@@ -198,8 +198,8 @@ static inline void download_results(struct darray *results)
 		struct pass_shaderresult *result =
 			 darray_item(sizeof(struct pass_shaderresult), results, i);
 		struct gs_effect_result *eresult = result->eresult;
-		gs_sresult_t *presult = result->sresult;
-		gs_shader_get_result(presult, &eresult->cur_val.da);
+		gs_sresult_t *sresult = result->sresult;
+		gs_shader_get_result(sresult, &eresult->cur_val.da);
 	}
 
 }
