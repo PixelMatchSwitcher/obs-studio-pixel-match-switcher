@@ -191,14 +191,9 @@ static inline void upload_parameters(struct gs_effect *effect,
 	reset_params(pshader_params);
 }
 
-static inline void download_results(struct gs_effect *effect)
+static inline void download_results(struct darray *results)
 {
-	struct darray *results;
 	size_t i;
-
-	if (!effect->cur_pass)
-		return;
-	results = &effect->cur_pass->program_results.da;
 	for (i = 0; i < results->num; i++) {
 		struct pass_shaderresult *result =
 			 darray_item(sizeof(struct pass_shaderresult), results, i);
@@ -273,7 +268,7 @@ void gs_technique_end_pass(gs_technique_t *tech)
 	if (!pass)
 		return;
 
-	download_results(gs_get_effect());
+	download_results(&pass->program_results.da);
 
 	clear_tex_params(&pass->vertshader_params.da);
 	clear_tex_params(&pass->pixelshader_params.da);
