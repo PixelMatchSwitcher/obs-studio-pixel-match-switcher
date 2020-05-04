@@ -614,6 +614,12 @@ struct gs_shader_param {
 	gs_shader_param(shader_var &var, uint32_t &texCounter);
 };
 
+struct gs_shader_result {
+	string name;
+	struct gs_shader_param;
+	vector<uint8_t> curValue;
+};
+
 struct ShaderError {
 	ComPtr<ID3D10Blob> errors;
 	HRESULT hr;
@@ -627,6 +633,7 @@ struct ShaderError {
 struct gs_shader : gs_obj {
 	gs_shader_type type;
 	vector<gs_shader_param> params;
+	vector<gs_shader_result> results;
 	ComPtr<ID3D11Buffer> constants;
 	size_t constantSize;
 

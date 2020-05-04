@@ -321,6 +321,18 @@ gs_sparam_t *gs_shader_get_param_by_idx(gs_shader_t *shader, uint32_t param)
 	return &shader->params[param];
 }
 
+gs_sresult_t *gs_shader_get_result_by_name(gs_shader_t *shader, const char *name)
+{
+	size_t i;
+	for (size_t i = 0; i < shader->results.size(); ++i) {
+		gs_shader_result &result = shader->results[i];
+		if (strcmp(result.name.c_str(), name) == 0)
+			return &result;
+	}
+
+	return NULL;
+}
+
 gs_sparam_t *gs_shader_get_param_by_name(gs_shader_t *shader, const char *name)
 {
 	for (size_t i = 0; i < shader->params.size(); i++) {
@@ -423,9 +435,31 @@ void gs_shader_set_texture(gs_sparam_t *param, gs_texture_t *val)
 	shader_setval_inline(param, &val, sizeof(gs_texture_t *));
 }
 
+void gs_shader_set_atomic_uint(gs_sparam_t *param, unsigned int val)
+{
+	shader_setval_inline(param, &val, sizeof(unsigned int));
+}
+
+unsigned int gs_shader_get_atomic_uint(gs_sparam_t *param)
+{
+	unsigned int *val = (unsigned int*)(param->curValue.data());
+	return *val;
+}
+
 void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 {
 	shader_setval_inline(param, val, size);
+}
+
+void  gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
+{
+	const auto &val = result->curValue;
+	if (val.empty()) {
+	    darray_free(dst);
+	} else {
+	    darray_resize(1, dst, val.size());
+	    memcpy(dst->array, val.data(), val.size());
+	}
 }
 
 void gs_shader_set_default(gs_sparam_t *param)

@@ -262,7 +262,7 @@ struct gs_exports {
 	void (*gs_shader_set_default)(gs_sparam_t *param);
 	void (*gs_shader_set_next_sampler)(gs_sparam_t *param,
 					   gs_samplerstate_t *sampler);
-	void (*gs_shader_get_result)(gs_sresult_t *param, struct darray* dst);
+	void (*gs_shader_get_result)(gs_sresult_t *result, struct darray *dst);
 	unsigned int (*gs_shader_get_atomic_uint)(gs_sparam_t *param);
 
 

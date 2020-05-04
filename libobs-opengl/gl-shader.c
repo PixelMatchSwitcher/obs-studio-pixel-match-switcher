@@ -989,7 +989,7 @@ void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 		da_copy_array(param->cur_value, val, size);
 }
 
-void gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
+void  gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
 {
 	darray_copy(1, dst, &result->cur_value.da);
 }
