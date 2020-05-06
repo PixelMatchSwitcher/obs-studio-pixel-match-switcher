@@ -18,7 +18,6 @@
 #include "d3d11-subsystem.hpp"
 #include "d3d11-shaderprocessor.hpp"
 
-#include <sstream>
 using namespace std;
 
 static const char *semanticInputNames[] = {"POSITION", "NORMAL",   "COLOR",
@@ -230,10 +229,9 @@ void ShaderProcessor::BuildString(string &outputString)
 			if (!SkipLayout(token))
 				output << "layout";
 		} else if (strref_cmp(&token->str, "atomicCounterIncrement") == 0)
-			output << "InterlockedAdd";
+			ReplaceAtomicIncrement(token, output);
 		else
 			output.write(token->str.array, token->str.len);
-
 		token++;
 	}
 
@@ -251,11 +249,31 @@ bool ShaderProcessor::SkipLayout(cf_token* &token)
 	if (peek->type == CFTOKEN_NONE)
 		return false;
 	else {
+		token = peek;
 		while (token->type != CFTOKEN_NONE
 		    && strref_cmp(&token->str, ")") != 0)
 			token++;
 	}
-	 return true;
+	return true;
+}
+
+void ShaderProcessor::ReplaceAtomicIncrement(
+	cf_token *&token, std::stringstream &out)
+{
+	out << "InterlockedAdd(";
+	while(strref_cmp(&token->str, "(") != 0) {
+		token++;
+		if (token->type == CFTOKEN_NONE)
+			return;
+	}
+	token++;
+	while(strref_cmp(&token->str, " ") == 0) {
+		token++;
+		if (token->type == CFTOKEN_NONE)
+			return;
+	}
+	out.write(token->str.array, token->str.len);
+	out << ", 1";
 }
 
 void ShaderProcessor::Process(const char *shader_string, const char *file)

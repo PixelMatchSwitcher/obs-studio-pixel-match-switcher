@@ -19,6 +19,8 @@
 
 #include <graphics/shader-parser.h>
 
+#include <sstream>
+
 struct ShaderParser : shader_parser {
 	inline ShaderParser() { shader_parser_init(this); }
 	inline ~ShaderParser() { shader_parser_free(this); }
@@ -38,4 +40,5 @@ public:
 	inline ShaderProcessor(gs_device_t *device) : device(device) {}
 protected:
 	bool SkipLayout(cf_token *&token);
+	void ReplaceAtomicIncrement(cf_token *&token, std::stringstream &out);
 };

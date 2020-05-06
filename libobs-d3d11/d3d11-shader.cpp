@@ -97,7 +97,7 @@ gs_pixel_shader::gs_pixel_shader(gs_device_t *device, const char *file,
 	processor.BuildSamplers(samplers);
 	BuildConstantBuffer();
 
-	Compile(outputString.c_str(), file, "ps_4_0", shaderBlob.Assign());
+	Compile(outputString.c_str(), file, "ps_5_0", shaderBlob.Assign());
 
 	data.resize(shaderBlob->GetBufferSize());
 	memcpy(&data[0], shaderBlob->GetBufferPointer(), data.size());
