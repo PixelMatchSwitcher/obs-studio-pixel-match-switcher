@@ -616,7 +616,7 @@ struct gs_shader_param {
 
 struct gs_shader_result {
 	string name;
-	struct gs_shader_param;
+	struct gs_shader_param *param;
 	vector<uint8_t> curValue;
 };
 

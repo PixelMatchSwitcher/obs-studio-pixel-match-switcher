@@ -185,6 +185,12 @@ void ShaderProcessor::BuildParams(vector<gs_shader_param> &params)
 		AddParam(parser.params.array[i], params, texCounter);
 }
 
+void ShaderProcessor::BuildResults(const vector<gs_shader_param> &params,
+				vector<gs_shader_result> &results)
+{
+
+}
+
 static inline void AddSampler(gs_device_t *device, shader_sampler &sampler,
 			      vector<unique_ptr<ShaderSampler>> &samplers)
 {
