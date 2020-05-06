@@ -167,6 +167,12 @@ gs_shader_param::gs_shader_param(shader_var &var, uint32_t &texCounter)
 		textureID = 0;
 }
 
+gs_shader_result::gs_shader_result(shader_var &var)
+	: name(var.name)
+{
+}
+
+
 static inline void AddParam(shader_var &var, vector<gs_shader_param> &params,
 			    uint32_t &texCounter)
 {
@@ -177,18 +183,23 @@ static inline void AddParam(shader_var &var, vector<gs_shader_param> &params,
 	params.push_back(gs_shader_param(var, texCounter));
 }
 
-void ShaderProcessor::BuildParams(vector<gs_shader_param> &params)
+static inline void AddResult(shader_var &var, vector<gs_shader_result> &results)
+{
+	results.push_back(gs_shader_result(var));
+}
+
+void ShaderProcessor::BuildParams(vector<gs_shader_param> &params,
+				  vector<gs_shader_result> &results)
 {
 	uint32_t texCounter = 0;
 
-	for (size_t i = 0; i < parser.params.num; i++)
-		AddParam(parser.params.array[i], params, texCounter);
-}
-
-void ShaderProcessor::BuildResults(const vector<gs_shader_param> &params,
-				vector<gs_shader_result> &results)
-{
-
+	for (size_t i = 0; i < parser.params.num; i++) {
+		shader_var &var = parser.params.array[i];
+		AddParam(var, params, texCounter);
+		if (var.is_result) {
+			AddResult(var, results);
+		}
+	}
 }
 
 static inline void AddSampler(gs_device_t *device, shader_sampler &sampler,

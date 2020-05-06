@@ -618,6 +618,8 @@ struct gs_shader_result {
 	string name;
 	struct gs_shader_param *param;
 	vector<uint8_t> curValue;
+
+	gs_shader_result(shader_var &var);
 };
 
 struct ShaderError {
