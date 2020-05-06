@@ -39,6 +39,6 @@ public:
 
 	inline ShaderProcessor(gs_device_t *device) : device(device) {}
 protected:
-	bool SkipLayout(cf_token *&token);
+	void ReplaceLayout(cf_token *&token, std::stringstream &out);
 	void ReplaceAtomicIncrement(cf_token *&token, std::stringstream &out);
 };

@@ -225,10 +225,9 @@ void ShaderProcessor::BuildString(string &outputString)
 			output << "SV_VertexID";
 		else if (strref_cmp(&token->str, "atomic_uint") == 0)
 			output << "uint";
-		else if (strref_cmp(&token->str, "layout") == 0) {
-			if (!SkipLayout(token))
-				output << "layout";
-		} else if (strref_cmp(&token->str, "atomicCounterIncrement") == 0)
+		else if (strref_cmp(&token->str, "layout") == 0)
+			ReplaceLayout(token, output);
+		else if (strref_cmp(&token->str, "atomicCounterIncrement") == 0)
 			ReplaceAtomicIncrement(token, output);
 		else
 			output.write(token->str.array, token->str.len);
@@ -238,7 +237,7 @@ void ShaderProcessor::BuildString(string &outputString)
 	outputString = move(output.str());
 }
 
-bool ShaderProcessor::SkipLayout(cf_token* &token)
+void ShaderProcessor::ReplaceLayout(cf_token* &token, stringstream &out)
 {
 	cf_token *peek = token + 1;
 	while(peek->type != CFTOKEN_NONE) {
@@ -246,19 +245,28 @@ bool ShaderProcessor::SkipLayout(cf_token* &token)
 			 break;
 		peek++;
 	}
-	if (peek->type == CFTOKEN_NONE)
-		return false;
-	else {
+	if (peek->type == CFTOKEN_NONE) {
+		out << "layout"; // "false positive; could be a var name"
+	} else {
 		token = peek;
 		while (token->type != CFTOKEN_NONE
 		    && strref_cmp(&token->str, ")") != 0)
 			token++;
+
+		peek = token + 1;
+		while(peek->type != CFTOKEN_NONE) {
+			if (strref_cmp(&peek->str, "uniform") == 0) {
+				token = peek;
+				break;
+			}
+			peek++;
+		}
+		//out << "groupshared";
 	}
-	return true;
 }
 
 void ShaderProcessor::ReplaceAtomicIncrement(
-	cf_token *&token, std::stringstream &out)
+	cf_token *&token, stringstream &out)
 {
 	out << "InterlockedAdd(";
 	while(strref_cmp(&token->str, "(") != 0) {
