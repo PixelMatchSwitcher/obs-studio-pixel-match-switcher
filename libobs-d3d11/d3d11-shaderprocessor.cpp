@@ -224,7 +224,7 @@ void ShaderProcessor::BuildString(string &outputString)
 		else if (strref_cmp(&token->str, "VERTEXID") == 0)
 			output << "SV_VertexID";
 		else if (strref_cmp(&token->str, "atomic_uint") == 0)
-			output << "uint";
+			output << "RWBuffer<uint>";
 		else if (strref_cmp(&token->str, "layout") == 0)
 			ReplaceLayout(token, output);
 		else if (strref_cmp(&token->str, "atomicCounterIncrement") == 0)
@@ -281,7 +281,7 @@ void ShaderProcessor::ReplaceAtomicIncrement(
 			return;
 	}
 	out.write(token->str.array, token->str.len);
-	out << ", 1";
+	out << "[0], 1";
 }
 
 void ShaderProcessor::Process(const char *shader_string, const char *file)
