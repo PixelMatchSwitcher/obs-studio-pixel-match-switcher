@@ -25,6 +25,7 @@ struct ShaderParser : shader_parser {
 };
 
 struct ShaderProcessor {
+public:
 	gs_device_t *device;
 	ShaderParser parser;
 
@@ -35,4 +36,6 @@ struct ShaderProcessor {
 	void Process(const char *shader_string, const char *file);
 
 	inline ShaderProcessor(gs_device_t *device) : device(device) {}
+protected:
+	bool SkipLayout(cf_token *&token);
 };
