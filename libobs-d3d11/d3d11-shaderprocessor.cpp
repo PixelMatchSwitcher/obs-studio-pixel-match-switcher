@@ -155,6 +155,9 @@ gs_shader_param::gs_shader_param(shader_var &var, uint32_t &texCounter)
 	: name(var.name),
 	  type(get_shader_param_type(var.type)),
 	  textureID(texCounter),
+	  layoutBinding(var.layout_binding),
+	  layoutOffset(var.layout_offset),
+	  isResult(var.is_result),
 	  arrayCount(var.array_count),
 	  changed(false)
 {
@@ -168,10 +171,9 @@ gs_shader_param::gs_shader_param(shader_var &var, uint32_t &texCounter)
 }
 
 gs_shader_result::gs_shader_result(shader_var &var)
-	: name(var.name)
+: name(var.name)
 {
 }
-
 
 static inline void AddParam(shader_var &var, vector<gs_shader_param> &params,
 			    uint32_t &texCounter)
@@ -198,6 +200,7 @@ void ShaderProcessor::BuildParams(vector<gs_shader_param> &params,
 		AddParam(var, params, texCounter);
 		if (var.is_result) {
 			AddResult(var, results);
+			results.back().param = &(params.back());
 		}
 	}
 }
@@ -218,85 +221,105 @@ void ShaderProcessor::BuildSamplers(vector<unique_ptr<ShaderSampler>> &samplers)
 
 void ShaderProcessor::BuildString(string &outputString)
 {
-	stringstream output;
-	output << "static const bool obs_glsl_compile = false;\n\n";
+	stringstream mainOutput, uavOutput;
 
 	cf_token *token = cf_preprocessor_get_tokens(&parser.cfp.pp);
 	while (token->type != CFTOKEN_NONE) {
 		/* cheaply just replace specific tokens */
 		if (strref_cmp(&token->str, "POSITION") == 0)
-			output << "SV_Position";
+			mainOutput << "SV_Position";
 		else if (strref_cmp(&token->str, "TARGET") == 0)
-			output << "SV_Target";
+			mainOutput << "SV_Target";
 		else if (strref_cmp(&token->str, "texture2d") == 0)
-			output << "Texture2D";
+			mainOutput << "Texture2D";
 		else if (strref_cmp(&token->str, "texture3d") == 0)
-			output << "Texture3D";
+			mainOutput << "Texture3D";
 		else if (strref_cmp(&token->str, "texture_cube") == 0)
-			output << "TextureCube";
+			mainOutput << "TextureCube";
 		else if (strref_cmp(&token->str, "texture_rect") == 0)
 			throw "texture_rect is not supported in D3D";
 		else if (strref_cmp(&token->str, "sampler_state") == 0)
-			output << "SamplerState";
+			mainOutput << "SamplerState";
 		else if (strref_cmp(&token->str, "VERTEXID") == 0)
-			output << "SV_VertexID";
-		else if (strref_cmp(&token->str, "atomic_uint") == 0)
-			output << "RWBuffer<uint>";
+			mainOutput << "SV_VertexID";
+		//else if (strref_cmp(&token->str, "atomic_uint") == 0)
+		//	uavOutput << "RWBuffer<uint>";
 		else if (strref_cmp(&token->str, "layout") == 0)
-			ReplaceLayout(token, output);
+			ReplaceLayout(token, uavOutput);
 		else if (strref_cmp(&token->str, "atomicCounterIncrement") == 0)
-			ReplaceAtomicIncrement(token, output);
+			ReplaceAtomicIncrement(token, mainOutput);
 		else
-			output.write(token->str.array, token->str.len);
+			mainOutput.write(token->str.array, token->str.len);
 		token++;
 	}
 
-	outputString = move(output.str());
+	outputString =
+		string("static const bool obs_glsl_compile = false;\n\n")
+		+ uavOutput.str()
+		+ "\n"
+		+ mainOutput.str();
 }
 
 void ShaderProcessor::ReplaceLayout(cf_token* &token, stringstream &out)
 {
 	cf_token *peek = token + 1;
-	while(peek->type != CFTOKEN_NONE) {
-		if (strref_cmp(&peek->str, "("))
-			 break;
-		peek++;
-	}
-	if (peek->type == CFTOKEN_NONE) {
+	if (!SeekUntil(peek, "(")) {
 		out << "layout"; // "false positive; could be a var name"
 	} else {
+		std::string temp, name;
+		unsigned int binding;
 		token = peek;
-		while (token->type != CFTOKEN_NONE
-		    && strref_cmp(&token->str, ")") != 0)
-			token++;
 
-		peek = token + 1;
-		while(peek->type != CFTOKEN_NONE) {
-			if (strref_cmp(&peek->str, "uniform") == 0) {
-				token = peek;
-				break;
-			}
-			peek++;
-		}
-		//out << "groupshared";
+		if (!SeekUntil(token, "binding")) return;
+		if (!SeekUntil(token, "=")) return;
+		token++;
+		if (!SeekWhile(token, " ")) return;
+
+		temp.resize(token->str.len);
+		memcpy(temp.data(), token->str.array, token->str.len);
+		binding = atoi(temp.data());
+
+		if (!SeekUntil(token, ")")) return;
+		if (!SeekUntil(token, "atomic_uint")) return;
+		token++;
+		if (!SeekWhile(token, " ")) return;
+
+		name.resize(token->str.len);
+		memcpy(name.data(), token->str.array, token->str.len);
+
+		out << "RWBuffer<uint> " << name
+		    << ": register(u" << (binding+1) << ");\n";
+		SeekUntil(token, ";");
 	}
+}
+
+bool ShaderProcessor::SeekUntil(cf_token *&token, const char *str)
+{
+	while(token->type != CFTOKEN_NONE) {
+		if(strref_cmp(&token->str, str) == 0)
+			return true;
+		token++;
+	}
+	return false;
+}
+
+bool ShaderProcessor::SeekWhile(cf_token *&token, const char *str)
+{
+	while(token->type != CFTOKEN_NONE) {
+		if(strref_cmp(&token->str, str) != 0)
+			return true;
+		token++;
+	}
+	return false;
 }
 
 void ShaderProcessor::ReplaceAtomicIncrement(
 	cf_token *&token, stringstream &out)
 {
 	out << "InterlockedAdd(";
-	while(strref_cmp(&token->str, "(") != 0) {
-		token++;
-		if (token->type == CFTOKEN_NONE)
-			return;
-	}
+	SeekUntil(token, "(");
 	token++;
-	while(strref_cmp(&token->str, " ") == 0) {
-		token++;
-		if (token->type == CFTOKEN_NONE)
-			return;
-	}
+	SeekWhile(token, " ");
 	out.write(token->str.array, token->str.len);
 	out << "[0], 1";
 }

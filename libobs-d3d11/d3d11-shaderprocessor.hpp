@@ -42,4 +42,7 @@ public:
 protected:
 	void ReplaceLayout(cf_token *&token, std::stringstream &out);
 	void ReplaceAtomicIncrement(cf_token *&token, std::stringstream &out);
+
+	static bool SeekUntil(cf_token * &token, const char *str);
+	static bool SeekWhile(cf_token * &token, const char *str);
 };
