@@ -21,6 +21,7 @@
 #include <graphics/vec3.h>
 #include <graphics/matrix3.h>
 #include <graphics/matrix4.h>
+#include <system_error>
 
 void gs_vertex_shader::GetBuffersExpected(
 	const vector<D3D11_INPUT_ELEMENT_DESC> &inputs)
@@ -57,6 +58,7 @@ gs_vertex_shader::gs_vertex_shader(gs_device_t *device, const char *file,
 	processor.BuildInputLayout(layoutData);
 	GetBuffersExpected(layoutData);
 	BuildConstantBuffer();
+	BuildUavBuffers();
 
 	Compile(outputString.c_str(), file, "vs_5_0", shaderBlob.Assign());
 
@@ -96,6 +98,7 @@ gs_pixel_shader::gs_pixel_shader(gs_device_t *device, const char *file,
 	processor.BuildParams(params, results);
 	processor.BuildSamplers(samplers);
 	BuildConstantBuffer();
+	BuildUavBuffers();
 
 	Compile(outputString.c_str(), file, "ps_5_0", shaderBlob.Assign());
 
@@ -140,7 +143,6 @@ void gs_shader::BuildConstantBuffer()
 		switch (param.type) {
 		case GS_SHADER_PARAM_BOOL:
 		case GS_SHADER_PARAM_INT:
-		//case GS_SHADER_PARAM_ATOMIC_UINT:
 		case GS_SHADER_PARAM_FLOAT:
 			size = sizeof(float);
 			break;
@@ -200,6 +202,43 @@ void gs_shader::BuildConstantBuffer()
 
 	for (size_t i = 0; i < params.size(); i++)
 		gs_shader_set_default(&params[i]);
+}
+
+void gs_shader::BuildUavBuffers()
+{
+	for (size_t i = 0; i < params.size(); i++) {
+		gs_shader_param &param = params[i];
+		if (param.type != GS_SHADER_PARAM_ATOMIC_UINT)
+			continue;
+
+		D3D11_BUFFER_DESC buffDesc;
+		buffDesc.Usage = D3D11_USAGE_DEFAULT;
+		buffDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE ;
+		buffDesc.ByteWidth = sizeof (unsigned int);
+		buffDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+		buffDesc.CPUAccessFlags = 0;
+		HRESULT hr =device->device->CreateBuffer(
+			&buffDesc, NULL, param.uavBuffer.Assign());
+		if (FAILED(hr)) {
+			string errMsg = string("Failed to create UAV buffer: ")
+				+ system_category().message(hr);
+			throw HRError(errMsg.data(), hr);
+		}
+
+		D3D11_UNORDERED_ACCESS_VIEW_DESC  viewDesc;
+		viewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+		viewDesc.Buffer.FirstElement = param.layoutBinding;
+		viewDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+		viewDesc.Buffer.NumElements = 1;
+		hr = device->device->CreateUnorderedAccessView(
+			param.uavBuffer, &viewDesc, param.uavView.Assign());
+		if (FAILED(hr)) {
+			string errMsg = string("Failed to create UAV view: ")
+				+ system_category().message(hr);
+			throw HRError(errMsg.data(), hr);
+		}
+	}
 }
 
 void gs_shader::Compile(const char *shaderString, const char *file,

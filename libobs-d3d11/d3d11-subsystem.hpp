@@ -606,6 +606,8 @@ struct gs_shader_param {
 	unsigned int layoutBinding;
 	unsigned int layoutOffset;
 	bool isResult;
+	ComPtr<ID3D11Buffer> uavBuffer;
+	ComPtr<ID3D11UnorderedAccessView> uavView;
 
 	int arrayCount;
 
@@ -651,6 +653,7 @@ struct gs_shader : gs_obj {
 	void UploadParams();
 
 	void BuildConstantBuffer();
+	void BuildUavBuffers();
 	void Compile(const char *shaderStr, const char *file,
 		     const char *target, ID3D10Blob **shader);
 

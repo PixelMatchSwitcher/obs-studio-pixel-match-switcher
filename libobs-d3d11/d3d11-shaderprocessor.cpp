@@ -287,7 +287,7 @@ void ShaderProcessor::ReplaceLayout(cf_token* &token, stringstream &out)
 		name.resize(token->str.len);
 		memcpy(name.data(), token->str.array, token->str.len);
 
-		out << "RWBuffer<uint> " << name
+		out << "RWByteAddressBuffer<uint> " << name
 		    << ": register(u" << (binding+1) << ");\n";
 		SeekUntil(token, ";");
 	}
