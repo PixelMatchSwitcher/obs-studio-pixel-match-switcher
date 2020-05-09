@@ -243,7 +243,22 @@ void gs_shader::Compile(const char *shaderString, const char *file,
 inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 				   gs_shader_param &param, bool &upload)
 {
-	if (param.type != GS_SHADER_PARAM_TEXTURE) {
+	if (param.type == GS_SHADER_PARAM_TEXTURE) {
+		if (param.curValue.size() == sizeof(gs_texture_t *)) {
+			gs_texture_t *tex;
+			memcpy(&tex, param.curValue.data(), sizeof(gs_texture_t *));
+			device_load_texture(device, tex, param.textureID);
+
+			if (param.nextSampler) {
+				ID3D11SamplerState *state = param.nextSampler->state;
+				device->context->PSSetSamplers(param.textureID, 1,
+							       &state);
+				param.nextSampler = nullptr;
+			}
+		}
+	} else if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
+		// TODO
+	} else {
 		if (!param.curValue.size())
 			throw "Not all shader parameters were set";
 
@@ -264,17 +279,6 @@ inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 			param.changed = false;
 		}
 
-	} else if (param.curValue.size() == sizeof(gs_texture_t *)) {
-		gs_texture_t *tex;
-		memcpy(&tex, param.curValue.data(), sizeof(gs_texture_t *));
-		device_load_texture(device, tex, param.textureID);
-
-		if (param.nextSampler) {
-			ID3D11SamplerState *state = param.nextSampler->state;
-			device->context->PSSetSamplers(param.textureID, 1,
-						       &state);
-			param.nextSampler = nullptr;
-		}
 	}
 }
 
