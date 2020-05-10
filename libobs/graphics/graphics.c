@@ -1272,6 +1272,9 @@ gs_swapchain_t *gs_swapchain_create(const struct gs_init_data *data)
 	if (!gs_valid_p("gs_swapchain_create", data))
 		return NULL;
 
+	if (new_data.num_backbuffers == 0)
+		new_data.num_backbuffers = 1;
+
 	return graphics->exports.device_swapchain_create(graphics->device,
 							 &new_data);
 }
@@ -2998,6 +3001,30 @@ gs_stagesurf_t *gs_stagesurface_create_nv12(uint32_t width, uint32_t height)
 			graphics->device, width, height);
 
 	return NULL;
+}
+
+void gs_register_loss_callbacks(const struct gs_device_loss *callbacks)
+{
+	graphics_t *graphics = thread_graphics;
+
+	if (!gs_valid("gs_register_loss_callbacks"))
+		return;
+
+	if (graphics->exports.device_register_loss_callbacks)
+		graphics->exports.device_register_loss_callbacks(
+			graphics->device, callbacks);
+}
+
+void gs_unregister_loss_callbacks(void *data)
+{
+	graphics_t *graphics = thread_graphics;
+
+	if (!gs_valid("gs_unregister_loss_callbacks"))
+		return;
+
+	if (graphics->exports.device_unregister_loss_callbacks)
+		graphics->exports.device_unregister_loss_callbacks(
+			graphics->device, data);
 }
 
 #endif

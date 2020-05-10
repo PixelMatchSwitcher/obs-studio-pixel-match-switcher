@@ -407,6 +407,8 @@ static int send_packet(struct rtmp_stream *stream,
 	int recv_size = 0;
 	int ret = 0;
 
+	assert(idx < RTMP_MAX_STREAMS);
+
 	if (!stream->new_socket_loop) {
 #ifdef _WIN32
 		ret = ioctlsocket(stream->rtmp.m_sb.sb_socket, FIONREAD,
@@ -944,6 +946,13 @@ static int try_connect(struct rtmp_stream *stream)
 
 	// this should have been called already by rtmp_stream_create
 	//RTMP_Init(&stream->rtmp);
+
+	// since we don't call RTMP_Init above, there's no other good place
+	// to reset this as doing it in RTMP_Close breaks the ugly RTMP
+	// authentication system
+	memset(&stream->rtmp.Link, 0, sizeof(stream->rtmp.Link));
+	stream->rtmp.last_error_code = 0;
+
 	if (!RTMP_SetupURL(&stream->rtmp, stream->path.array))
 		return OBS_OUTPUT_BAD_PATH;
 

@@ -193,6 +193,8 @@ private:
 	const char *copyFiltersString = nullptr;
 	bool copyVisible = true;
 
+	bool closing = false;
+	QScopedPointer<QThread> whatsNewInitThread;
 	QScopedPointer<QThread> updateCheckThread;
 	QScopedPointer<QThread> introCheckThread;
 	QScopedPointer<QThread> logUploadThread;
@@ -238,6 +240,7 @@ private:
 	QPointer<QWidget> stats;
 	QPointer<QWidget> remux;
 	QPointer<QWidget> extraBrowsers;
+	QPointer<QWidget> importer;
 
 	QPointer<QMenu> startStreamMenu;
 
@@ -462,6 +465,7 @@ private:
 	void LoadSavedProjectors(obs_data_array_t *savedProjectors);
 
 	void ReceivedIntroJson(const QString &text);
+	void ShowWhatsNew(const QString &url);
 
 #ifdef BROWSER_AVAILABLE
 	QList<QSharedPointer<QDockWidget>> extraBrowserDocks;
@@ -508,8 +512,9 @@ private:
 
 	QSlider *tBar;
 	bool tBarActive = false;
-	bool tBarDown = false;
-	void EnableTBar();
+
+	OBSSource GetOverrideTransition(OBSSource source);
+	int GetOverrideTransitionDuration(OBSSource source);
 
 public slots:
 	void DeferSaveBegin();
@@ -658,6 +663,8 @@ private slots:
 
 	void TBarChanged(int value);
 	void TBarReleased();
+
+	void LockVolumeControl(bool lock);
 
 private:
 	/* OBS Callbacks */
@@ -832,6 +839,8 @@ private slots:
 	void on_actionCenterToScreen_triggered();
 	void on_actionVerticalCenter_triggered();
 	void on_actionHorizontalCenter_triggered();
+
+	void on_customContextMenuRequested(const QPoint &pos);
 
 	void on_scenes_currentItemChanged(QListWidgetItem *current,
 					  QListWidgetItem *prev);

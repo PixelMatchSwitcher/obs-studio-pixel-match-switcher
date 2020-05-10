@@ -119,6 +119,11 @@ SourceTree QLineEdit {
 
 /* Dock Widget */
 
+QDockWidget {
+	titlebar-close-icon: url('./Dark/Close.svg');
+	titlebar-normal-icon: url('./Dark/Popout.svg');
+}
+
 QDockWidget::title {
     text-align: center;
     background-color: rgb(70,69,70);
@@ -814,14 +819,13 @@ SceneTree {
 /* Studio Mode T-Bar */
 
 QSlider[themeID="tBarSlider"] {
-	height: 80px;
+	height: 24px;
 }
 
 QSlider::groove:horizontal[themeID="tBarSlider"] {
 	border: 1px solid #4c4c4c;
 	height: 5px;
-	background: rgb(31,30,31);;
-	margin: 0 12px;
+	background: rgb(31,30,31);
 }
 
 QSlider::sub-page:horizontal[themeID="tBarSlider"] {
@@ -831,7 +835,7 @@ QSlider::sub-page:horizontal[themeID="tBarSlider"] {
 
 QSlider::handle:horizontal[themeID="tBarSlider"] {
 	background-color: #d2d2d2;
-	width: 25px;
-	height: 80px;
-	margin: -24px -12px;
+	width: 12px;
+	height: 24px;
+	margin: -24px 0px;
 }

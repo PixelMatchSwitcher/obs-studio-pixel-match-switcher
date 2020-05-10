@@ -34,6 +34,7 @@
 #include <QGuiApplication>
 #include <QProxyStyle>
 #include <QScreen>
+#include <QProcess>
 
 #include "qt-wrappers.hpp"
 #include "obs-app.hpp"
@@ -83,6 +84,8 @@ string opt_starting_scene;
 bool remuxAfterRecord = false;
 string remuxFilename;
 
+bool restart = false;
+
 // GPU hint exports for AMD/NVIDIA laptops
 #ifdef _MSC_VER
 extern "C" __declspec(dllexport) DWORD NvOptimusEnablement = 1;
@@ -93,7 +96,8 @@ QObject *CreateShortcutFilter()
 {
 	return new OBSEventFilter([](QObject *obj, QEvent *event) {
 		auto mouse_event = [](QMouseEvent &event) {
-			if (!App()->HotkeysEnabledInFocus())
+			if (!App()->HotkeysEnabledInFocus() &&
+			    event.button() != Qt::LeftButton)
 				return true;
 
 			obs_key_combination_t hotkey = {0, OBS_KEY_NONE};
@@ -1323,6 +1327,17 @@ void OBSApp::Exec(VoidFunc func)
 	func();
 }
 
+static void ui_task_handler(obs_task_t task, void *param, bool wait)
+{
+	auto doTask = [=]() {
+		/* to get clang-format to behave */
+		task(param);
+	};
+	QMetaObject::invokeMethod(App(), "Exec",
+				  wait ? WaitConnection() : Qt::AutoConnection,
+				  Q_ARG(VoidFunc, doTask));
+}
+
 bool OBSApp::OBSInit()
 {
 	ProfileScope("OBSApp::OBSInit");
@@ -1333,6 +1348,8 @@ bool OBSApp::OBSInit()
 
 	if (!StartupOBS(locale.c_str(), GetProfilerNameStore()))
 		return false;
+
+	obs_set_ui_task_handler(ui_task_handler);
 
 #ifdef _WIN32
 	bool browserHWAccel =
@@ -1759,7 +1776,15 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 	QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
+#if !defined(_WIN32) && !defined(__APPLE__) && BROWSER_AVAILABLE
+	setenv("QT_NO_GLIB", "1", true);
+#endif
+
 	QCoreApplication::addLibraryPath(".");
+
+#if __APPLE__
+	InstallNSApplicationSubclass();
+#endif
 
 	OBSApp program(argc, argv, profilerNameStore.get());
 	try {
@@ -1843,12 +1868,16 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 
 		prof.Stop();
 
-		return program.exec();
+		ret = program.exec();
 
 	} catch (const char *error) {
 		blog(LOG_ERROR, "%s", error);
 		OBSErrorBox(nullptr, "%s", error);
 	}
+
+	if (restart)
+		QProcess::startDetached(qApp->arguments()[0],
+					qApp->arguments());
 
 	return ret;
 }

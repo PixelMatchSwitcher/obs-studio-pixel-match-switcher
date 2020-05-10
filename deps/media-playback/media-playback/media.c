@@ -308,9 +308,8 @@ static void mp_media_next_audio(mp_media_t *m)
 	audio.format = convert_sample_format(f->format);
 	audio.frames = f->nb_samples;
 
-	if (!m->pause)
-		audio.timestamp = m->base_ts + d->frame_pts - m->start_ts +
-				  m->play_sys_ts - base_sys_ts;
+	audio.timestamp = m->base_ts + d->frame_pts - m->start_ts +
+			  m->play_sys_ts - base_sys_ts;
 
 	if (audio.format == AUDIO_FORMAT_UNKNOWN)
 		return;
@@ -396,9 +395,8 @@ static void mp_media_next_video(mp_media_t *m, bool preload)
 	if (frame->format == VIDEO_FORMAT_NONE)
 		return;
 
-	if (!m->pause)
-		frame->timestamp = m->base_ts + d->frame_pts - m->start_ts +
-				   m->play_sys_ts - base_sys_ts;
+	frame->timestamp = m->base_ts + d->frame_pts - m->start_ts +
+			   m->play_sys_ts - base_sys_ts;
 
 	frame->width = f->width;
 	frame->height = f->height;
@@ -420,7 +418,6 @@ static void mp_media_next_video(mp_media_t *m, bool preload)
 static void mp_media_calc_next_ns(mp_media_t *m)
 {
 	int64_t min_next_ns = mp_media_get_next_min_pts(m);
-
 	int64_t delta = min_next_ns - m->next_pts_ns;
 #ifdef _DEBUG
 	assert(delta >= 0);
@@ -431,26 +428,19 @@ static void mp_media_calc_next_ns(mp_media_t *m)
 		delta = 0;
 
 	m->next_ns += delta;
-
-	if (!m->pause)
-		m->next_pts_ns = min_next_ns;
+	m->next_pts_ns = min_next_ns;
 }
 
-static bool mp_media_reset(mp_media_t *m)
+static void seek_to(mp_media_t *m, int64_t pos)
 {
 	AVStream *stream = m->fmt->streams[0];
-	int64_t seek_pos;
+	int64_t seek_pos = pos;
 	int seek_flags;
-	bool stopping;
-	bool active;
 
-	if (m->fmt->duration == AV_NOPTS_VALUE) {
-		seek_pos = 0;
+	if (m->fmt->duration == AV_NOPTS_VALUE)
 		seek_flags = AVSEEK_FLAG_FRAME;
-	} else {
-		seek_pos = m->fmt->start_time;
+	else
 		seek_flags = AVSEEK_FLAG_BACKWARD;
-	}
 
 	int64_t seek_target = seek_flags == AVSEEK_FLAG_BACKWARD
 				      ? av_rescale_q(seek_pos, AV_TIME_BASE_Q,
@@ -469,6 +459,14 @@ static bool mp_media_reset(mp_media_t *m)
 		mp_decode_flush(&m->v);
 	if (m->has_audio && m->is_local_file)
 		mp_decode_flush(&m->a);
+}
+
+static bool mp_media_reset(mp_media_t *m)
+{
+	bool stopping;
+	bool active;
+
+	seek_to(m, m->fmt->start_time);
 
 	int64_t next_ts = mp_media_get_base_pts(m);
 	int64_t offset = next_ts - m->next_pts_ns;
@@ -619,6 +617,14 @@ static bool init_avformat(mp_media_t *m)
 	return true;
 }
 
+static void reset_ts(mp_media_t *m)
+{
+	m->base_ts += mp_media_get_base_pts(m);
+	m->play_sys_ts = (int64_t)os_gettime_ns();
+	m->start_ts = m->next_pts_ns = mp_media_get_next_min_pts(m);
+	m->next_ns = 0;
+}
+
 static inline bool mp_media_thread(mp_media_t *m)
 {
 	os_set_thread_name("mp_media_thread");
@@ -631,7 +637,8 @@ static inline bool mp_media_thread(mp_media_t *m)
 	}
 
 	for (;;) {
-		bool reset, kill, is_active;
+		bool reset, kill, is_active, seek, pause, reset_time;
+		int64_t seek_pos;
 		bool timeout = false;
 
 		pthread_mutex_lock(&m->mutex);
@@ -652,6 +659,13 @@ static inline bool mp_media_thread(mp_media_t *m)
 		m->reset = false;
 		m->kill = false;
 
+		pause = m->pause;
+		seek_pos = m->seek_pos;
+		seek = m->seek;
+		reset_time = m->reset_ts;
+		m->seek = false;
+		m->reset_ts = false;
+
 		pthread_mutex_unlock(&m->mutex);
 
 		if (kill) {
@@ -661,6 +675,19 @@ static inline bool mp_media_thread(mp_media_t *m)
 			mp_media_reset(m);
 			continue;
 		}
+
+		if (seek) {
+			seek_to(m, seek_pos);
+			continue;
+		}
+
+		if (reset_time) {
+			reset_ts(m);
+			continue;
+		}
+
+		if (pause)
+			continue;
 
 		/* frames are ready */
 		if (is_active && !timeout) {
@@ -810,9 +837,11 @@ void mp_media_play_pause(mp_media_t *m, bool pause)
 	pthread_mutex_lock(&m->mutex);
 	if (m->active) {
 		m->pause = pause;
-		os_sem_post(m->sem);
+		m->reset_ts = !pause;
 	}
 	pthread_mutex_unlock(&m->mutex);
+
+	os_sem_post(m->sem);
 }
 
 void mp_media_stop(mp_media_t *m)
@@ -822,42 +851,26 @@ void mp_media_stop(mp_media_t *m)
 		m->reset = true;
 		m->active = false;
 		m->stopping = true;
-		os_sem_post(m->sem);
 	}
 	pthread_mutex_unlock(&m->mutex);
+
+	os_sem_post(m->sem);
 }
 
 int64_t mp_get_current_time(mp_media_t *m)
 {
-	return (int64_t)(((float)m->next_pts_ns / 1000000.0f) *
-			 ((float)m->speed / 100.0f));
+	int speed = (int)((float)m->speed / 100.0f);
+	return (mp_media_get_base_pts(m) / 1000000) * speed;
 }
 
 void mp_media_seek_to(mp_media_t *m, int64_t pos)
 {
-	if (!m->active)
-		return;
-
-	int64_t seek_to = pos * 1000;
-
-	AVStream *stream = m->fmt->streams[0];
-
-	int64_t seek_target = AVSEEK_FLAG_BACKWARD == AVSEEK_FLAG_BACKWARD
-				      ? av_rescale_q(seek_to, AV_TIME_BASE_Q,
-						     stream->time_base)
-				      : seek_to;
-
-	if (m->is_local_file) {
-		int ret = av_seek_frame(m->fmt, 0, seek_target,
-					AVSEEK_FLAG_BACKWARD);
-		if (ret < 0) {
-			blog(LOG_WARNING, "MP: Failed to seek: %s",
-			     av_err2str(ret));
-		}
+	pthread_mutex_lock(&m->mutex);
+	if (m->active) {
+		m->seek = true;
+		m->seek_pos = pos * 1000;
 	}
+	pthread_mutex_unlock(&m->mutex);
 
-	if (m->has_video && m->is_local_file)
-		mp_decode_flush(&m->v);
-	if (m->has_audio && m->is_local_file)
-		mp_decode_flush(&m->a);
+	os_sem_post(m->sem);
 }

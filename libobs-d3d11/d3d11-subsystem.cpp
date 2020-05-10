@@ -25,6 +25,7 @@
 #include <d3d9.h>
 #include "d3d11-subsystem.hpp"
 #include "d3d11-config.h"
+#include "intel-nv12-support.hpp"
 
 struct UnsupportedHWError : HRError {
 	inline UnsupportedHWError(const char *str, HRESULT hr)
@@ -72,41 +73,18 @@ gs_obj::~gs_obj()
 		next->prev_next = prev_next;
 }
 
-static inline void make_swap_desc_common(DXGI_SWAP_CHAIN_DESC &desc,
-					 const gs_init_data *data,
-					 UINT num_backbuffers,
-					 DXGI_SWAP_EFFECT effect)
+static inline void make_swap_desc(DXGI_SWAP_CHAIN_DESC &desc,
+				  const gs_init_data *data)
 {
 	memset(&desc, 0, sizeof(desc));
+	desc.BufferCount = data->num_backbuffers;
+	desc.BufferDesc.Format = ConvertGSTextureFormat(data->format);
 	desc.BufferDesc.Width = data->cx;
 	desc.BufferDesc.Height = data->cy;
-	desc.BufferDesc.Format = ConvertGSTextureFormat(data->format);
-	desc.SampleDesc.Count = 1;
 	desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	desc.BufferCount = num_backbuffers;
 	desc.OutputWindow = (HWND)data->window.hwnd;
+	desc.SampleDesc.Count = 1;
 	desc.Windowed = true;
-	desc.SwapEffect = effect;
-}
-
-static inline void make_swap_desc_win7(DXGI_SWAP_CHAIN_DESC &desc,
-				       const gs_init_data *data)
-{
-	UINT num_backbuffers = data->num_backbuffers;
-	if (num_backbuffers == 0)
-		num_backbuffers = 1;
-	make_swap_desc_common(desc, data, num_backbuffers,
-			      DXGI_SWAP_EFFECT_DISCARD);
-}
-
-static inline void make_swap_desc_win10(DXGI_SWAP_CHAIN_DESC &desc,
-					const gs_init_data *data)
-{
-	UINT num_backbuffers = data->num_backbuffers;
-	if (num_backbuffers == 0)
-		num_backbuffers = 2;
-	make_swap_desc_common(desc, data, num_backbuffers,
-			      DXGI_SWAP_EFFECT_FLIP_DISCARD);
 }
 
 void gs_swap_chain::InitTarget(uint32_t cx, uint32_t cy)
@@ -191,16 +169,11 @@ gs_swap_chain::gs_swap_chain(gs_device *device, const gs_init_data *data)
 {
 	HRESULT hr;
 
-	make_swap_desc_win10(swapDesc, data);
+	make_swap_desc(swapDesc, data);
 	hr = device->factory->CreateSwapChain(device->device, &swapDesc,
 					      swap.Assign());
-	if (FAILED(hr)) {
-		make_swap_desc_win7(swapDesc, data);
-		hr = device->factory->CreateSwapChain(device->device, &swapDesc,
-						      swap.Assign());
-		if (FAILED(hr))
-			throw HRError("Failed to create swap chain", hr);
-	}
+	if (FAILED(hr))
+		throw HRError("Failed to create swap chain", hr);
 
 	/* Ignore Alt+Enter */
 	device->factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
@@ -510,7 +483,7 @@ void gs_device::InitDevice(uint32_t adapterIdx)
 	}
 
 	/* Intel CopyResource is very slow with NV12 */
-	if (desc.VendorId == 0x8086) {
+	if (desc.VendorId == 0x8086 && IsOldIntelPlatform(desc.DeviceId)) {
 		return;
 	}
 
@@ -972,6 +945,8 @@ static inline void LogD3DAdapters()
 		     desc.DedicatedVideoMemory);
 		blog(LOG_INFO, "\t  Shared VRAM:    %u",
 		     desc.SharedSystemMemory);
+		blog(LOG_INFO, "\t  PCI ID:         %x:%x", desc.VendorId,
+		     desc.DeviceId);
 
 		/* driver version */
 		LARGE_INTEGER umd;
@@ -2797,4 +2772,23 @@ device_stagesurface_create_nv12(gs_device_t *device, uint32_t width,
 	}
 
 	return surf;
+}
+
+extern "C" EXPORT void
+device_register_loss_callbacks(gs_device_t *device,
+			       const gs_device_loss *callbacks)
+{
+	device->loss_callbacks.emplace_back(*callbacks);
+}
+
+extern "C" EXPORT void device_unregister_loss_callbacks(gs_device_t *device,
+							void *data)
+{
+	for (auto iter = device->loss_callbacks.begin();
+	     iter != device->loss_callbacks.end(); ++iter) {
+		if (iter->data == data) {
+			device->loss_callbacks.erase(iter);
+			break;
+		}
+	}
 }
