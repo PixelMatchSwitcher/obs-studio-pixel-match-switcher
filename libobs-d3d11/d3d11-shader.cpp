@@ -58,7 +58,7 @@ gs_vertex_shader::gs_vertex_shader(gs_device_t *device, const char *file,
 	processor.BuildInputLayout(layoutData);
 	GetBuffersExpected(layoutData);
 	BuildConstantBuffer();
-	BuildUavBuffers();
+	BuildUavBuffer();
 
 	Compile(outputString.c_str(), file, "vs_5_0", shaderBlob.Assign());
 
@@ -98,7 +98,7 @@ gs_pixel_shader::gs_pixel_shader(gs_device_t *device, const char *file,
 	processor.BuildParams(params, results);
 	processor.BuildSamplers(samplers);
 	BuildConstantBuffer();
-	BuildUavBuffers();
+	BuildUavBuffer();
 
 	Compile(outputString.c_str(), file, "ps_5_0", shaderBlob.Assign());
 
@@ -204,40 +204,42 @@ void gs_shader::BuildConstantBuffer()
 		gs_shader_set_default(&params[i]);
 }
 
-void gs_shader::BuildUavBuffers()
+void gs_shader::BuildUavBuffer()
 {
+	size_t uintSz = sizeof(unsigned int);
 	for (size_t i = 0; i < params.size(); i++) {
 		gs_shader_param &param = params[i];
-		if (param.type != GS_SHADER_PARAM_ATOMIC_UINT)
-			continue;
+		if (param.type == GS_SHADER_PARAM_ATOMIC_UINT)
+		{
+			unsigned int binding = param.layoutBinding;
+			uavSize = max(uavSize, binding * uintSz + uintSz);
+		}
+	}
 
-		D3D11_BUFFER_DESC buffDesc;
-		buffDesc.Usage = D3D11_USAGE_DEFAULT;
-		buffDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE ;
-		buffDesc.ByteWidth = sizeof (unsigned int);
-		buffDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-		buffDesc.CPUAccessFlags = 0;
+	if (uavSize) {
+		memset(&uavBd, 0, sizeof(uavBd));
+		uavBd.Usage = D3D11_USAGE_DEFAULT;
+		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE ;
+		uavBd.ByteWidth = (uavSize + 15) & 0xFFFFFFF0; /* align */
+		uavBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		uavBd.StructureByteStride = uintSz;
+		uavBd.CPUAccessFlags = 0;
 		HRESULT hr =device->device->CreateBuffer(
-			&buffDesc, NULL, param.uavBuffer.Assign());
-		if (FAILED(hr)) {
-			string errMsg = string("Failed to create UAV buffer: ")
-				+ system_category().message(hr);
-			throw HRError(errMsg.data(), hr);
-		}
+			&uavBd, NULL, uavBuffer.Assign());
+		if (FAILED(hr))
+			throw HRError("Failed to create UAV buffer", hr);
 
-		D3D11_UNORDERED_ACCESS_VIEW_DESC  viewDesc;
-		viewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		viewDesc.Buffer.FirstElement = param.layoutBinding;
-		viewDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-		viewDesc.Buffer.NumElements = 1;
+		memset(&uavViewDesc, 0, sizeof(uavViewDesc));
+		uavViewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		uavViewDesc.Format = DXGI_FORMAT_UNKNOWN;
+		uavViewDesc.Buffer.FirstElement = 0;
+		//uavViewDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+		uavViewDesc.Buffer.Flags = 0;
+		uavViewDesc.Buffer.NumElements = uavSize / sizeof(unsigned int);
 		hr = device->device->CreateUnorderedAccessView(
-			param.uavBuffer, &viewDesc, param.uavView.Assign());
-		if (FAILED(hr)) {
-			string errMsg = string("Failed to create UAV view: ")
-				+ system_category().message(hr);
-			throw HRError(errMsg.data(), hr);
-		}
+			uavBuffer, &uavViewDesc, uavView.Assign());
+		if (FAILED(hr))
+			throw HRError("Failed to create UAV view", hr);
 	}
 }
 

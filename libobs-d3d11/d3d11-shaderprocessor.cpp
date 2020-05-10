@@ -221,46 +221,49 @@ void ShaderProcessor::BuildSamplers(vector<unique_ptr<ShaderSampler>> &samplers)
 
 void ShaderProcessor::BuildString(string &outputString)
 {
-	stringstream mainOutput, uavOutput;
+	stringstream tempOutput, finalOutput;
+	unordered_map<string, unsigned int> uavMapping;
 
 	cf_token *token = cf_preprocessor_get_tokens(&parser.cfp.pp);
 	while (token->type != CFTOKEN_NONE) {
 		/* cheaply just replace specific tokens */
 		if (strref_cmp(&token->str, "POSITION") == 0)
-			mainOutput << "SV_Position";
+			tempOutput << "SV_Position";
 		else if (strref_cmp(&token->str, "TARGET") == 0)
-			mainOutput << "SV_Target";
+			tempOutput << "SV_Target";
 		else if (strref_cmp(&token->str, "texture2d") == 0)
-			mainOutput << "Texture2D";
+			tempOutput << "Texture2D";
 		else if (strref_cmp(&token->str, "texture3d") == 0)
-			mainOutput << "Texture3D";
+			tempOutput << "Texture3D";
 		else if (strref_cmp(&token->str, "texture_cube") == 0)
-			mainOutput << "TextureCube";
+			tempOutput << "TextureCube";
 		else if (strref_cmp(&token->str, "texture_rect") == 0)
 			throw "texture_rect is not supported in D3D";
 		else if (strref_cmp(&token->str, "sampler_state") == 0)
-			mainOutput << "SamplerState";
+			tempOutput << "SamplerState";
 		else if (strref_cmp(&token->str, "VERTEXID") == 0)
-			mainOutput << "SV_VertexID";
+			tempOutput << "SV_VertexID";
 		//else if (strref_cmp(&token->str, "atomic_uint") == 0)
 		//	uavOutput << "RWBuffer<uint>";
 		else if (strref_cmp(&token->str, "layout") == 0)
-			ReplaceLayout(token, uavOutput);
+			ReplaceLayout(token, tempOutput, uavMapping);
 		else if (strref_cmp(&token->str, "atomicCounterIncrement") == 0)
-			ReplaceAtomicIncrement(token, mainOutput);
+			ReplaceAtomicIncrement(token, tempOutput, uavMapping);
 		else
-			mainOutput.write(token->str.array, token->str.len);
+			tempOutput.write(token->str.array, token->str.len);
 		token++;
 	}
 
-	outputString =
-		string("static const bool obs_glsl_compile = false;\n\n")
-		+ uavOutput.str()
-		+ "\n"
-		+ mainOutput.str();
+	finalOutput << "static const bool obs_glsl_compile = false;\n\n";
+	if (uavMapping.size())
+		finalOutput << "RWStructuredBuffer<uint> __uavBuffer : register(u1);\n\n";
+	finalOutput << tempOutput.str();
+
+	outputString = finalOutput.str();
 }
 
-void ShaderProcessor::ReplaceLayout(cf_token* &token, stringstream &out)
+void ShaderProcessor::ReplaceLayout(cf_token* &token, stringstream &out,
+	std::unordered_map<std::string, unsigned int> &map)
 {
 	cf_token *peek = token + 1;
 	if (!SeekUntil(peek, "(")) {
@@ -287,8 +290,11 @@ void ShaderProcessor::ReplaceLayout(cf_token* &token, stringstream &out)
 		name.resize(token->str.len);
 		memcpy(name.data(), token->str.array, token->str.len);
 
-		out << "RWByteAddressBuffer<uint> " << name
-		    << ": register(u" << (binding+1) << ");\n";
+		//out << "RWByteAddressBuffer " << name
+		//out << "RWBuffer<uint> " << name
+		//    << ": register(u" << (binding+1) << ");\n";
+		map[name] = binding;
+
 		SeekUntil(token, ";");
 	}
 }
@@ -314,14 +320,20 @@ bool ShaderProcessor::SeekWhile(cf_token *&token, const char *str)
 }
 
 void ShaderProcessor::ReplaceAtomicIncrement(
-	cf_token *&token, stringstream &out)
+	cf_token *&token, stringstream &out,
+	const unordered_map<string, unsigned int> &mapping)
 {
-	out << "InterlockedAdd(";
 	SeekUntil(token, "(");
 	token++;
 	SeekWhile(token, " ");
-	out.write(token->str.array, token->str.len);
-	out << "[0], 1";
+
+	std::string name;
+	name.resize(token->str.len);
+	memcpy(name.data(), token->str.array, token->str.len);
+
+	out << "InterlockedAdd(__uavBuffer["
+	    << mapping.at(name)
+	    << "], 1";
 }
 
 void ShaderProcessor::Process(const char *shader_string, const char *file)

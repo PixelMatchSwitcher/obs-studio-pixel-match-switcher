@@ -606,8 +606,6 @@ struct gs_shader_param {
 	unsigned int layoutBinding;
 	unsigned int layoutOffset;
 	bool isResult;
-	ComPtr<ID3D11Buffer> uavBuffer;
-	ComPtr<ID3D11UnorderedAccessView> uavView;
 
 	int arrayCount;
 
@@ -643,9 +641,15 @@ struct gs_shader : gs_obj {
 	vector<gs_shader_param> params;
 	vector<gs_shader_result> results;
 	ComPtr<ID3D11Buffer> constants;
+	ComPtr<ID3D11Buffer> uavBuffer;
+	ComPtr<ID3D11UnorderedAccessView> uavView;
 	size_t constantSize;
+	size_t uavSize;
 
 	D3D11_BUFFER_DESC bd = {};
+	D3D11_BUFFER_DESC uavBd = {};
+	D3D11_UNORDERED_ACCESS_VIEW_DESC uavViewDesc = {};
+
 	vector<uint8_t> data;
 
 	inline void UpdateParam(vector<uint8_t> &constData,
@@ -653,13 +657,14 @@ struct gs_shader : gs_obj {
 	void UploadParams();
 
 	void BuildConstantBuffer();
-	void BuildUavBuffers();
+	void BuildUavBuffer();
 	void Compile(const char *shaderStr, const char *file,
 		     const char *target, ID3D10Blob **shader);
 
 	inline gs_shader(gs_device_t *device, gs_type obj_type,
 			 gs_shader_type type)
-		: gs_obj(device, obj_type), type(type), constantSize(0)
+		: gs_obj(device, obj_type), type(type)
+		, constantSize(0), uavSize(0)
 	{
 	}
 
