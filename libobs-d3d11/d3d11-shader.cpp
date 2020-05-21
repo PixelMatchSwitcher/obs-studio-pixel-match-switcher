@@ -22,6 +22,7 @@
 #include <graphics/matrix3.h>
 #include <graphics/matrix4.h>
 #include <system_error>
+#include <fstream>
 
 void gs_vertex_shader::GetBuffersExpected(
 	const vector<D3D11_INPUT_ELEMENT_DESC> &inputs)
@@ -99,6 +100,11 @@ gs_pixel_shader::gs_pixel_shader(gs_device_t *device, const char *file,
 	processor.BuildSamplers(samplers);
 	BuildConstantBuffer();
 	BuildUavBuffer();
+
+	std::ofstream dump("C:/Users/admin/Documents/dump.txt", std::ios_base::trunc);
+	dump << outputString.c_str();
+	dump.flush();
+	dump.close();
 
 	Compile(outputString.c_str(), file, "ps_5_0", shaderBlob.Assign());
 
@@ -212,7 +218,8 @@ void gs_shader::BuildUavBuffer()
 		if (param.type == GS_SHADER_PARAM_ATOMIC_UINT)
 		{
 			unsigned int binding = param.layoutBinding;
-			uavSize = max(uavSize, binding * uintSz + uintSz);
+			param.pos = binding * uintSz;
+			uavSize = max(uavSize, param.pos + uintSz);
 		}
 	}
 
@@ -235,7 +242,7 @@ void gs_shader::BuildUavBuffer()
 		uavViewDesc.Buffer.FirstElement = 0;
 		//uavViewDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
 		uavViewDesc.Buffer.Flags = 0;
-		uavViewDesc.Buffer.NumElements = uavSize / sizeof(unsigned int);
+		uavViewDesc.Buffer.NumElements = uavSize / uintSz;
 		hr = device->device->CreateUnorderedAccessView(
 			uavBuffer, &uavViewDesc, uavView.Assign());
 		if (FAILED(hr))
@@ -281,8 +288,9 @@ void gs_shader::Compile(const char *shaderString, const char *file,
 #endif
 }
 
-inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
-				   gs_shader_param &param, bool &upload)
+inline void gs_shader::UpdateParam(
+	vector<uint8_t> &constData, vector<uint8_t> &uavData,
+	gs_shader_param &param, bool &uploadConst, bool &uploadUav)
 {
 	if (param.type == GS_SHADER_PARAM_TEXTURE) {
 		if (param.curValue.size() == sizeof(gs_texture_t *)) {
@@ -298,7 +306,22 @@ inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 			}
 		}
 	} else if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
-		// TODO
+		if (!param.curValue.size())
+			throw "Not all shader parameters were set";
+		/* padding in case the UAV var needs to start at a new
+		 * register */
+		if (param.pos > uavData.size()) {
+			uint8_t zero = 0;
+			uavData.insert(uavData.end(),
+				       param.pos - uavData.size(), zero);
+		}
+
+		uavData.insert(uavData.end(), param.curValue.begin(),
+			       param.curValue.end());
+		if (param.changed) {
+			uploadUav = true;
+			param.changed = false;
+		}
 	} else {
 		if (!param.curValue.size())
 			throw "Not all shader parameters were set";
@@ -316,27 +339,30 @@ inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 				 param.curValue.end());
 
 		if (param.changed) {
-			upload = true;
+			uploadConst = true;
 			param.changed = false;
 		}
-
 	}
 }
 
 void gs_shader::UploadParams()
 {
 	vector<uint8_t> constData;
-	bool upload = false;
+	vector<uint8_t> uavData;
+	bool uploadConst = false, uploadUav = false;
 
 	constData.reserve(constantSize);
 
 	for (size_t i = 0; i < params.size(); i++)
-		UpdateParam(constData, params[i], upload);
+		UpdateParam(constData, uavData, params[i],
+		uploadConst, uploadUav);
 
 	if (constData.size() != constantSize)
 		throw "Invalid constant data size given to shader";
+	if (uavData.size() != uavSize)
+		throw "Invalid UAV data size given to shader";
 
-	if (upload) {
+	if (uploadConst) {
 		D3D11_MAPPED_SUBRESOURCE map;
 		HRESULT hr;
 
@@ -347,6 +373,9 @@ void gs_shader::UploadParams()
 
 		memcpy(map.pData, constData.data(), constData.size());
 		device->context->Unmap(constants, 0);
+	}
+	if (uploadUav) {
+		// TODO
 	}
 }
 

@@ -652,8 +652,9 @@ struct gs_shader : gs_obj {
 
 	vector<uint8_t> data;
 
-	inline void UpdateParam(vector<uint8_t> &constData,
-				gs_shader_param &param, bool &upload);
+	inline void UpdateParam(
+		vector<uint8_t> &constData, vector<uint8_t> &uavData,
+		gs_shader_param &param, bool &uploadConst, bool &uploadUav);
 	void UploadParams();
 
 	void BuildConstantBuffer();
