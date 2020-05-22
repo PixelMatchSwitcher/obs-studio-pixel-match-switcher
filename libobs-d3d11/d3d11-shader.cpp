@@ -226,12 +226,15 @@ void gs_shader::BuildUavBuffer()
 	if (uavSize) {
 		memset(&uavBd, 0, sizeof(uavBd));
 		uavBd.Usage = D3D11_USAGE_DEFAULT;
-		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE ;
-		uavBd.ByteWidth = (uavSize + 15) & 0xFFFFFFF0; /* align */
+		//uavBd.Usage = D3D11_USAGE_DYNAMIC;
+		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS| D3D11_BIND_SHADER_RESOURCE;
+		//uavBd.ByteWidth = (uavSize + 15) & 0xFFFFFFF0; /* align */
+		uavBd.ByteWidth = uavSize;
 		uavBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 		uavBd.StructureByteStride = uintSz;
-		uavBd.CPUAccessFlags = 0;
-		HRESULT hr =device->device->CreateBuffer(
+		uavBd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE |
+				       D3D11_CPU_ACCESS_READ;
+		HRESULT hr = device->device->CreateBuffer(
 			&uavBd, NULL, uavBuffer.Assign());
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV buffer", hr);
@@ -375,7 +378,20 @@ void gs_shader::UploadParams()
 		device->context->Unmap(constants, 0);
 	}
 	if (uploadUav) {
-		// TODO
+		ID3D11UnorderedAccessView *uavs[] = { uavView.Get() };
+		device->context->CSSetUnorderedAccessViews(1, 1, uavs, nullptr);
+
+		#if 0
+		D3D11_MAPPED_SUBRESOURCE map;
+		HRESULT hr;
+
+		hr = device->context->Map(
+			uavBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+		if (FAILED(hr))
+			throw HRError("Could not lock UAV buffer", hr);
+		memcpy(map.pData, uavData.data(), uavData.size());
+		device->context->Unmap(uavBuffer, 0);
+		#endif
 	}
 }
 
@@ -398,7 +414,6 @@ gs_sparam_t *gs_shader_get_param_by_idx(gs_shader_t *shader, uint32_t param)
 
 gs_sresult_t *gs_shader_get_result_by_name(gs_shader_t *shader, const char *name)
 {
-	size_t i;
 	for (size_t i = 0; i < shader->results.size(); ++i) {
 		gs_shader_result &result = shader->results[i];
 		if (strcmp(result.name.c_str(), name) == 0)
