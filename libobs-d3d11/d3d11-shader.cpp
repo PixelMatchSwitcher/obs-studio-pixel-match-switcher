@@ -243,8 +243,7 @@ void gs_shader::BuildUavBuffer()
 		uavViewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 		uavViewDesc.Format = DXGI_FORMAT_UNKNOWN;
 		uavViewDesc.Buffer.FirstElement = 0;
-		//uavViewDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-		uavViewDesc.Buffer.Flags = 0;
+		uavViewDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
 		uavViewDesc.Buffer.NumElements = uavSize / uintSz;
 		hr = device->device->CreateUnorderedAccessView(
 			uavBuffer, &uavViewDesc, uavView.Assign());
@@ -321,10 +320,10 @@ inline void gs_shader::UpdateParam(
 
 		uavData.insert(uavData.end(), param.curValue.begin(),
 			       param.curValue.end());
-		if (param.changed) {
-			uploadUav = true;
-			param.changed = false;
-		}
+		//if (param.changed) {
+		uploadUav = true;
+		//param.changed = false;
+		//}
 	} else {
 		if (!param.curValue.size())
 			throw "Not all shader parameters were set";
@@ -379,7 +378,19 @@ void gs_shader::UploadParams()
 	}
 	if (uploadUav) {
 		ID3D11UnorderedAccessView *uavs[] = { uavView.Get() };
-		device->context->CSSetUnorderedAccessViews(1, 1, uavs, nullptr);
+		UINT initCounts[] = { 0 };
+
+		ID3D11RenderTargetView *rtv = nullptr;
+		ID3D11DepthStencilView *dsv = nullptr;
+		device->context->OMGetRenderTargets(1, &rtv, &dsv);
+
+		//device->context->CSSetUnorderedAccessViews(0, 1, uavs, initCounts);
+		device->context->OMSetRenderTargetsAndUnorderedAccessViews(
+			1, &rtv, dsv,
+			1, 1, uavs, initCounts);
+		//device->context->CopyStructureCount(uavBuffer, 0, uavView);
+
+		//device->context->CopyStructureCount(uavBuffer, 0, uavView);
 
 		#if 0
 		D3D11_MAPPED_SUBRESOURCE map;
