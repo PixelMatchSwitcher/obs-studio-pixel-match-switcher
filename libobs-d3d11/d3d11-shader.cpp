@@ -230,9 +230,9 @@ void gs_shader::BuildUavBuffer()
 		//uavBd.Usage = D3D11_USAGE_DYNAMIC;
 		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS| D3D11_BIND_SHADER_RESOURCE;
 		//uavBd.ByteWidth = (uavSize + 15) & 0xFFFFFFF0; /* align */
-		uavBd.ByteWidth = uavSize;
+		uavBd.ByteWidth = (UINT)uavSize;
 		uavBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		uavBd.StructureByteStride = uintSz;
+		uavBd.StructureByteStride = (UINT)uintSz;
 		uavBd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE |
 				       D3D11_CPU_ACCESS_READ;
 		HRESULT hr = device->device->CreateBuffer(
@@ -246,7 +246,7 @@ void gs_shader::BuildUavBuffer()
 		uavViewDesc.Format = DXGI_FORMAT_UNKNOWN;
 		uavViewDesc.Buffer.FirstElement = 0;
 		uavViewDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
-		uavViewDesc.Buffer.NumElements = uavSize / uintSz;
+		uavViewDesc.Buffer.NumElements = (UINT)(uavSize / uintSz);
 		hr = device->device->CreateUnorderedAccessView(
 			uavBuffer, &uavViewDesc, uavView.Assign());
 		if (FAILED(hr))
@@ -256,9 +256,9 @@ void gs_shader::BuildUavBuffer()
 		memset(&uavTxfrBd, 0, sizeof(uavTxfrBd));
 		uavTxfrBd.Usage = D3D11_USAGE_STAGING;
 		uavTxfrBd.BindFlags = 0;
-		uavTxfrBd.ByteWidth = uavSize;
+		uavTxfrBd.ByteWidth = (UINT)uavSize;
 		uavTxfrBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		uavTxfrBd.StructureByteStride = uintSz;
+		uavTxfrBd.StructureByteStride = (UINT)uintSz;
 		uavTxfrBd.CPUAccessFlags
 			= D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
 		hr = device->device->CreateBuffer(&uavTxfrBd, NULL,
@@ -410,7 +410,15 @@ void gs_shader::UploadParams()
 					  D3D11_MAP_WRITE, 0, &map);
 		if (FAILED(hr))
  			throw HRError("Could not lock UAV transfer buffer", hr);
-		memset(map.pData, 0, uavSize); // TODO: dynamic
+		for (size_t i = 0; i < params.size(); i++) {
+			const gs_shader_param &param = params[i];
+			if (param.type == GS_SHADER_PARAM_ATOMIC_UINT)
+				memcpy((unsigned char *)map.pData + param.pos,
+				       param.curValue.data(),
+				       param.curValue.size());
+			
+		}
+
 		device->context->Unmap(uavTxfrBuffer, 0);
 
 		device->context->CopyResource(uavBuffer, uavTxfrBuffer);
