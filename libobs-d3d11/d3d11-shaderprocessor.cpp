@@ -171,7 +171,8 @@ gs_shader_param::gs_shader_param(shader_var &var, uint32_t &texCounter)
 }
 
 gs_shader_result::gs_shader_result(shader_var &var)
-: name(var.name)
+	: name(var.name),
+	  param(nullptr)
 {
 }
 
@@ -185,7 +186,7 @@ static inline void AddParam(shader_var &var, vector<gs_shader_param> &params,
 	params.push_back(gs_shader_param(var, texCounter));
 }
 
-static inline void AddResult(shader_var &var, vector<gs_shader_result> &results)
+static inline void AddResult(shader_var var, vector<gs_shader_result> &results)
 {
 	results.push_back(gs_shader_result(var));
 }
@@ -200,7 +201,6 @@ void ShaderProcessor::BuildParams(vector<gs_shader_param> &params,
 		AddParam(var, params, texCounter);
 		if (var.is_result) {
 			AddResult(var, results);
-			results.back().param = &(params.back());
 		}
 	}
 }

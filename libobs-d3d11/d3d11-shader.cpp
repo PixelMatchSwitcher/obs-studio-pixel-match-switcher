@@ -101,10 +101,12 @@ gs_pixel_shader::gs_pixel_shader(gs_device_t *device, const char *file,
 	BuildConstantBuffer();
 	BuildUavBuffer();
 
+	#if 1
 	std::ofstream dump("C:/Users/admin/Documents/dump.txt", std::ios_base::trunc);
 	dump << outputString.c_str();
 	dump.flush();
 	dump.close();
+	#endif
 
 	Compile(outputString.c_str(), file, "ps_5_0", shaderBlob.Assign());
 
@@ -220,6 +222,10 @@ void gs_shader::BuildUavBuffer()
 			unsigned int binding = param.layoutBinding;
 			param.pos = binding * uintSz;
 			uavSize = max(uavSize, param.pos + uintSz);
+
+			gs_shader_result *result = gs_shader_get_result_by_name(
+				this, param.name.data());
+			result->param = &param;
 		}
 	}
 
@@ -370,6 +376,7 @@ void gs_shader::UploadParams()
 	bool uploadConst = false, uploadUav = false;
 
 	constData.reserve(constantSize);
+	uavData.reserve(uavSize);
 
 	for (size_t i = 0; i < params.size(); i++)
 		UpdateParam(constData, uavData, params[i],
@@ -410,19 +417,39 @@ void gs_shader::UploadParams()
 					  D3D11_MAP_WRITE, 0, &map);
 		if (FAILED(hr))
  			throw HRError("Could not lock UAV transfer buffer", hr);
-		for (size_t i = 0; i < params.size(); i++) {
-			const gs_shader_param &param = params[i];
-			if (param.type == GS_SHADER_PARAM_ATOMIC_UINT)
-				memcpy((unsigned char *)map.pData + param.pos,
-				       param.curValue.data(),
-				       param.curValue.size());
-			
-		}
-
+		memcpy(map.pData, uavData.data(), uavSize);
 		device->context->Unmap(uavTxfrBuffer, 0);
-
 		device->context->CopyResource(uavBuffer, uavTxfrBuffer);
 		//device->context->CopyStructureCount(uavBuffer, 0, uavTxfrBuffer);
+	}
+}
+
+void gs_shader::DownloadResults()
+{
+	if (uavSize == 0 || results.empty())
+		return;
+
+	vector<uint8_t> resultsData;
+	resultsData.resize(uavSize);
+	//device->context->CopyStructureCount(uavTxfrBuffer, 0, uavView);
+	device->context->CopyResource(uavTxfrBuffer, uavBuffer);
+	D3D11_MAPPED_SUBRESOURCE map;
+	HRESULT hr;
+	hr = device->context->Map(uavTxfrBuffer, 0, D3D11_MAP_READ, 0, &map);
+	if (FAILED(hr))
+		throw HRError("Could not lock UAV transfer buffer", hr);
+	memcpy(resultsData.data(), map.pData, uavSize);
+	device->context->Unmap(uavTxfrBuffer, 0);
+
+	for (size_t i = 0; i < results.size(); ++i) {
+		gs_shader_result &result = results[i];
+		if (result.param->type == GS_SHADER_PARAM_ATOMIC_UINT) {
+			size_t uintSz = sizeof(unsigned int);
+			result.curValue.resize(uintSz);
+			memcpy(result.curValue.data(),
+			       resultsData.data() + result.param->pos,
+			       uintSz);
+		}
 	}
 }
 
