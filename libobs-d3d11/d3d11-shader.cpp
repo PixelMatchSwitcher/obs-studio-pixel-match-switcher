@@ -224,6 +224,7 @@ void gs_shader::BuildUavBuffer()
 	}
 
 	if (uavSize) {
+		// UAV buffer
 		memset(&uavBd, 0, sizeof(uavBd));
 		uavBd.Usage = D3D11_USAGE_DEFAULT;
 		//uavBd.Usage = D3D11_USAGE_DYNAMIC;
@@ -239,6 +240,7 @@ void gs_shader::BuildUavBuffer()
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV buffer", hr);
 
+		// UAV view description
 		memset(&uavViewDesc, 0, sizeof(uavViewDesc));
 		uavViewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 		uavViewDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -249,6 +251,20 @@ void gs_shader::BuildUavBuffer()
 			uavBuffer, &uavViewDesc, uavView.Assign());
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV view", hr);
+
+		// transfer buffer
+		memset(&uavTxfrBd, 0, sizeof(uavTxfrBd));
+		uavTxfrBd.Usage = D3D11_USAGE_STAGING;
+		uavTxfrBd.BindFlags = 0;
+		uavTxfrBd.ByteWidth = uavSize;
+		uavTxfrBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		uavTxfrBd.StructureByteStride = uintSz;
+		uavTxfrBd.CPUAccessFlags
+			= D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+		hr = device->device->CreateBuffer(&uavTxfrBd, NULL,
+			uavTxfrBuffer.Assign());
+		if (FAILED(hr))
+			throw HRError("Failed to create UAV transfer buffer", hr);
 	}
 }
 
@@ -384,25 +400,21 @@ void gs_shader::UploadParams()
 		ID3D11DepthStencilView *dsv = nullptr;
 		device->context->OMGetRenderTargets(1, &rtv, &dsv);
 
-		//device->context->CSSetUnorderedAccessViews(0, 1, uavs, initCounts);
 		device->context->OMSetRenderTargetsAndUnorderedAccessViews(
 			1, &rtv, dsv,
 			1, 1, uavs, initCounts);
-		//device->context->CopyStructureCount(uavBuffer, 0, uavView);
 
-		//device->context->CopyStructureCount(uavBuffer, 0, uavView);
-
-		#if 0
 		D3D11_MAPPED_SUBRESOURCE map;
 		HRESULT hr;
-
-		hr = device->context->Map(
-			uavBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+		hr = device->context->Map(uavTxfrBuffer, 0,
+					  D3D11_MAP_WRITE, 0, &map);
 		if (FAILED(hr))
-			throw HRError("Could not lock UAV buffer", hr);
-		memcpy(map.pData, uavData.data(), uavData.size());
-		device->context->Unmap(uavBuffer, 0);
-		#endif
+ 			throw HRError("Could not lock UAV transfer buffer", hr);
+		memset(map.pData, 0, uavSize); // TODO: dynamic
+		device->context->Unmap(uavTxfrBuffer, 0);
+
+		device->context->CopyResource(uavBuffer, uavTxfrBuffer);
+		//device->context->CopyStructureCount(uavBuffer, 0, uavTxfrBuffer);
 	}
 }
 

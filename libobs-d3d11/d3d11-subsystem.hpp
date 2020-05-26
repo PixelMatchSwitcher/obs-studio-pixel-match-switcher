@@ -642,12 +642,14 @@ struct gs_shader : gs_obj {
 	vector<gs_shader_result> results;
 	ComPtr<ID3D11Buffer> constants;
 	ComPtr<ID3D11Buffer> uavBuffer;
+	ComPtr<ID3D11Buffer> uavTxfrBuffer;
 	ComPtr<ID3D11UnorderedAccessView> uavView;
 	size_t constantSize;
 	size_t uavSize;
 
 	D3D11_BUFFER_DESC bd = {};
 	D3D11_BUFFER_DESC uavBd = {};
+	D3D11_BUFFER_DESC uavTxfrBd = {};
 	D3D11_UNORDERED_ACCESS_VIEW_DESC uavViewDesc = {};
 
 	vector<uint8_t> data;

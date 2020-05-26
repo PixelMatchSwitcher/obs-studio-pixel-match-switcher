@@ -192,13 +192,16 @@ void gs_vertex_shader::Rebuild(ID3D11Device *dev)
 			throw HRError("Failed to create constant buffer", hr);
 	}
 	if (uavSize) {
-		hr = dev->CreateBuffer(&uavBd, NULL, &uavBuffer);
+		hr = dev->CreateBuffer(&uavBd, NULL, uavBuffer.Assign());
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV buffer", hr);
 		hr = device->device->CreateUnorderedAccessView(
 			uavBuffer, &uavViewDesc, uavView.Assign());
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV view", hr);
+		hr = device->device->CreateBuffer(&uavTxfrBd, NULL, uavTxfrBuffer.Assign());
+		if (FAILED(hr))
+			throw HRError("Failed to create UAV transfer buffer", hr);
 	}
 
 	for (gs_shader_param &param : params) {
@@ -222,13 +225,17 @@ void gs_pixel_shader::Rebuild(ID3D11Device *dev)
 			throw HRError("Failed to create constant buffer", hr);
 	}
 	if (uavSize) {
-		hr = dev->CreateBuffer(&uavBd, NULL, &uavBuffer);
+		hr = dev->CreateBuffer(&uavBd, NULL, uavBuffer.Assign());
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV buffer", hr);
 		hr = device->device->CreateUnorderedAccessView(
 			uavBuffer, &uavViewDesc, uavView.Assign());
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV view", hr);
+		hr = device->device->CreateBuffer(&uavTxfrBd, NULL,
+			uavTxfrBuffer.Assign());
+		if (FAILED(hr))
+			throw HRError("Failed to create UAV transfer buffer", hr);
 	}
 
 	for (gs_shader_param &param : params) {
