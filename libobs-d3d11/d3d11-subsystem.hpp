@@ -752,6 +752,8 @@ struct gs_pixel_shader : gs_shader {
 	{
 		shader.Release();
 		constants.Release();
+		uavBuffer.Release();
+		uavTxfrBuffer.Release();
 	}
 
 	inline void GetSamplerStates(ID3D11SamplerState **states)
