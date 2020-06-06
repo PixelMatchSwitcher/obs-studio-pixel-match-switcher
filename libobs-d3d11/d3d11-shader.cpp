@@ -233,10 +233,8 @@ void gs_shader::BuildUavBuffer()
 		// UAV buffer
 		memset(&uavBd, 0, sizeof(uavBd));
 		uavBd.Usage = D3D11_USAGE_DEFAULT;
-		//uavBd.Usage = D3D11_USAGE_DYNAMIC;
 		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS| D3D11_BIND_SHADER_RESOURCE;
-		//uavBd.ByteWidth = (uavSize + 15) & 0xFFFFFFF0; /* align */
-		uavBd.ByteWidth = (UINT)uavSize;
+		uavBd.ByteWidth = (UINT)(uavSize + 15) & 0xFFFFFFF0; /* align */
 		uavBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 		uavBd.StructureByteStride = (UINT)uintSz;
 		uavBd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE |
@@ -431,7 +429,6 @@ void gs_shader::DownloadResults()
 
 	vector<uint8_t> resultsData;
 	resultsData.resize(uavSize);
-	//device->context->CopyStructureCount(uavTxfrBuffer, 0, uavView);
 	device->context->CopyResource(uavTxfrBuffer, uavBuffer);
 	D3D11_MAPPED_SUBRESOURCE map;
 	HRESULT hr;
