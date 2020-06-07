@@ -233,7 +233,8 @@ void gs_shader::BuildUavBuffer()
 		// UAV buffer
 		memset(&uavBd, 0, sizeof(uavBd));
 		uavBd.Usage = D3D11_USAGE_DEFAULT;
-		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS| D3D11_BIND_SHADER_RESOURCE;
+		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS
+				| D3D11_BIND_SHADER_RESOURCE;
 		uavBd.ByteWidth = (UINT)uavSize;
 		uavBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 		uavBd.StructureByteStride = (UINT)uintSz;
@@ -268,7 +269,8 @@ void gs_shader::BuildUavBuffer()
 		hr = device->device->CreateBuffer(&uavTxfrBd, NULL,
 			uavTxfrBuffer.Assign());
 		if (FAILED(hr))
-			throw HRError("Failed to create UAV transfer buffer", hr);
+			throw HRError(
+				"Failed to create UAV transfer buffer", hr);
 	}
 }
 
@@ -401,9 +403,12 @@ void gs_shader::UploadParams()
 		ID3D11UnorderedAccessView *uavs[] = { uavView.Get() };
 		UINT initCounts[] = { 0 };
 
-		ID3D11RenderTargetView *rtv = nullptr;
+		int i = device->curRenderSide;
+		ID3D11RenderTargetView *rtv
+			= device->curRenderTarget->renderTarget[i];
 		ID3D11DepthStencilView *dsv = nullptr;
-		device->context->OMGetRenderTargets(1, &rtv, &dsv);
+		if (device->curZStencilBuffer)
+			dsv = device->curZStencilBuffer->view;
 
 		device->context->OMSetRenderTargetsAndUnorderedAccessViews(
 			1, &rtv, dsv,
@@ -418,7 +423,6 @@ void gs_shader::UploadParams()
 		memcpy(map.pData, uavData.data(), uavSize);
 		device->context->Unmap(uavTxfrBuffer, 0);
 		device->context->CopyResource(uavBuffer, uavTxfrBuffer);
-		//device->context->CopyStructureCount(uavBuffer, 0, uavTxfrBuffer);
 	}
 }
 
@@ -467,7 +471,8 @@ gs_sparam_t *gs_shader_get_param_by_idx(gs_shader_t *shader, uint32_t param)
 	return &shader->params[param];
 }
 
-gs_sresult_t *gs_shader_get_result_by_name(gs_shader_t *shader, const char *name)
+gs_sresult_t *gs_shader_get_result_by_name(gs_shader_t *shader,
+					   const char *name)
 {
 	for (size_t i = 0; i < shader->results.size(); ++i) {
 		gs_shader_result &result = shader->results[i];
