@@ -234,7 +234,7 @@ void gs_shader::BuildUavBuffer()
 		memset(&uavBd, 0, sizeof(uavBd));
 		uavBd.Usage = D3D11_USAGE_DEFAULT;
 		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS| D3D11_BIND_SHADER_RESOURCE;
-		uavBd.ByteWidth = (UINT)(uavSize + 15) & 0xFFFFFFF0; /* align */
+		uavBd.ByteWidth = (UINT)uavSize;
 		uavBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 		uavBd.StructureByteStride = (UINT)uintSz;
 		uavBd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE |
