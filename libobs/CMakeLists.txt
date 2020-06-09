@@ -74,7 +74,7 @@ endif()
 
 find_package(ZLIB REQUIRED)
 
-include_directories(SYSTEM ${ZLIB_INCLUDE_DIR})
+include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
 
 add_definitions(-DLIBOBS_EXPORTS)
 
@@ -370,6 +370,7 @@ set(libobs_util_HEADERS
 	util/text-lookup.h
 	util/bmem.h
 	util/c99defs.h
+	util/util_uint64.h
 	util/util_uint128.h
 	util/cf-parser.h
 	util/threading.h
@@ -480,6 +481,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 set_target_properties(libobs PROPERTIES
+	FOLDER "core"
 	OUTPUT_NAME obs
 	VERSION "0"
 	SOVERSION "0")

@@ -1780,6 +1780,11 @@ void OBSBasic::OBSInit()
 	SystemTray(true);
 #endif
 
+#ifdef _WIN32
+	taskBtn->setWindow(windowHandle());
+	taskProg->setRange(0, 1);
+#endif
+
 	bool has_last_version = config_has_user_value(App()->GlobalConfig(),
 						      "General", "LastVersion");
 	bool first_run =
@@ -3701,14 +3706,14 @@ int OBSBasic::ResetVideo()
 	ovi.gpu_conversion = true;
 	ovi.scale_type = GetScaleType(basicConfig);
 
-	if (ovi.base_width == 0 || ovi.base_height == 0) {
+	if (ovi.base_width < 8 || ovi.base_height < 8) {
 		ovi.base_width = 1920;
 		ovi.base_height = 1080;
 		config_set_uint(basicConfig, "Video", "BaseCX", 1920);
 		config_set_uint(basicConfig, "Video", "BaseCY", 1080);
 	}
 
-	if (ovi.output_width == 0 || ovi.output_height == 0) {
+	if (ovi.output_width < 8 || ovi.output_height < 8) {
 		ovi.output_width = ovi.base_width;
 		ovi.output_height = ovi.base_height;
 		config_set_uint(basicConfig, "Video", "OutputCX",
@@ -4722,7 +4727,7 @@ void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 
 		resizeOutput->setEnabled(!obs_video_active());
 
-		if (width == 0 || height == 0)
+		if (width < 8 || height < 8)
 			resizeOutput->setEnabled(false);
 
 		scaleFilteringMenu = new QMenu(QTStr("ScaleFiltering"));
@@ -5292,6 +5297,13 @@ inline void OBSBasic::OnActivate()
 		App()->IncrementSleepInhibition();
 		UpdateProcessPriority();
 
+#ifdef _WIN32
+		taskProg->show();
+		taskProg->resume();
+		taskProg->setValue(1);
+		taskBtn->setOverlayIcon(QIcon::fromTheme(
+			"obs-active", QIcon(":/res/images/active.png")));
+#endif
 		if (trayIcon)
 			trayIcon->setIcon(QIcon::fromTheme(
 				"obs-tray-active",
@@ -5313,12 +5325,34 @@ inline void OBSBasic::OnDeactivate()
 		if (trayIcon)
 			trayIcon->setIcon(QIcon::fromTheme(
 				"obs-tray", QIcon(":/res/images/obs.png")));
-	} else if (trayIcon) {
-		if (os_atomic_load_bool(&recording_paused))
-			trayIcon->setIcon(QIcon(":/res/images/obs_paused.png"));
-		else
-			trayIcon->setIcon(
-				QIcon(":/res/images/tray_active.png"));
+#ifdef _WIN32
+		taskProg->hide();
+		taskBtn->clearOverlayIcon();
+#endif
+	} else {
+		if (os_atomic_load_bool(&recording_paused)) {
+#ifdef _WIN32
+			taskProg->show();
+			taskProg->pause();
+			taskBtn->setOverlayIcon(QIcon::fromTheme(
+				"obs-paused",
+				QIcon(":/res/images/paused.png")));
+#endif
+			if (trayIcon)
+				trayIcon->setIcon(
+					QIcon(":/res/images/obs_paused.png"));
+		} else {
+#ifdef _WIN32
+			taskProg->show();
+			taskProg->resume();
+			taskBtn->setOverlayIcon(QIcon::fromTheme(
+				"obs-active",
+				QIcon(":/res/images/active.png")));
+#endif
+			if (trayIcon)
+				trayIcon->setIcon(
+					QIcon(":/res/images/tray_active.png"));
+		}
 	}
 }
 
@@ -7698,6 +7732,11 @@ void OBSBasic::PauseRecording()
 
 		ui->statusbar->RecordingPaused();
 
+#ifdef _WIN32
+		taskProg->pause();
+		taskBtn->setOverlayIcon(QIcon::fromTheme(
+			"obs-paused", QIcon(":/res/images/paused.png")));
+#endif
 		if (trayIcon)
 			trayIcon->setIcon(QIcon(":/res/images/obs_paused.png"));
 
@@ -7727,6 +7766,11 @@ void OBSBasic::UnpauseRecording()
 
 		ui->statusbar->RecordingUnpaused();
 
+#ifdef _WIN32
+		taskProg->resume();
+		taskBtn->setOverlayIcon(QIcon::fromTheme(
+			"obs-active", QIcon(":/res/images/active.png")));
+#endif
 		if (trayIcon)
 			trayIcon->setIcon(
 				QIcon(":/res/images/tray_active.png"));
