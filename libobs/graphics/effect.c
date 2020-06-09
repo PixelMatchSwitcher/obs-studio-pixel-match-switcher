@@ -191,6 +191,19 @@ static inline void upload_parameters(struct gs_effect *effect,
 	reset_params(pshader_params);
 }
 
+static inline void download_results(struct darray *results)
+{
+	size_t i;
+	for (i = 0; i < results->num; i++) {
+		struct pass_shaderresult *result =
+			 darray_item(sizeof(struct pass_shaderresult), results, i);
+		struct gs_effect_result *eresult = result->eresult;
+		gs_sresult_t *sresult = result->sresult;
+		gs_shader_get_result(sresult, &eresult->cur_val.da);
+	}
+
+}
+
 void gs_effect_update_params(gs_effect_t *effect)
 {
 	if (effect)
@@ -255,6 +268,8 @@ void gs_technique_end_pass(gs_technique_t *tech)
 	if (!pass)
 		return;
 
+	download_results(&pass->program_results.da);
+
 	clear_tex_params(&pass->vertshader_params.da);
 	clear_tex_params(&pass->pixelshader_params.da);
 	tech->effect->cur_pass = NULL;
@@ -290,6 +305,38 @@ gs_eparam_t *gs_effect_get_param_by_name(const gs_effect_t *effect,
 
 		if (strcmp(param->name, name) == 0)
 			return param;
+	}
+
+	return NULL;
+}
+
+gs_eresult_t *gs_effect_get_result_by_idx(const gs_effect_t *effect,
+					  size_t result)
+{
+	if (!effect)
+		return NULL;
+
+	struct gs_effect_result *results = effect->results.array;
+	if (result >= effect->results.num)
+		return NULL;
+
+	return results + result;
+}
+
+gs_eresult_t *gs_effect_get_result_by_name(const gs_effect_t *effect,
+					   const char *name)
+{
+	if (!effect)
+		return NULL;
+
+	struct gs_effect_result *results = effect->results.array;
+
+	for (size_t i = 0; i < effect->results.num; ++i) {
+		struct gs_effect_result *result = results + i;
+
+		if (strcmp(result->name, name) == 0) {
+			return result;
+		}
 	}
 
 	return NULL;
@@ -396,7 +443,9 @@ static inline void effect_setval_inline(gs_eparam_t *param, const void *data,
 	if (size_changed)
 		da_resize(param->cur_val, size);
 
-	if (size_changed || memcmp(param->cur_val.array, data, size) != 0) {
+	if (size_changed ||
+	    param->type == GS_SHADER_PARAM_ATOMIC_UINT ||
+	    memcmp(param->cur_val.array, data, size) != 0) {
 		memcpy(param->cur_val.array, data, size);
 		param->changed = true;
 	}
@@ -489,6 +538,11 @@ void gs_effect_set_texture(gs_eparam_t *param, gs_texture_t *val)
 	effect_setval_inline(param, &val, sizeof(gs_texture_t *));
 }
 
+void gs_effect_set_atomic_uint(gs_eparam_t *param, unsigned int val)
+{
+	effect_setval_inline(param, &val, sizeof(unsigned int));
+}
+
 void gs_effect_set_val(gs_eparam_t *param, const void *val, size_t size)
 {
 	effect_setval_inline(param, val, size);
@@ -546,6 +600,22 @@ void gs_effect_set_default(gs_eparam_t *param)
 {
 	effect_setval_inline(param, param->default_val.array,
 			     param->default_val.num);
+}
+
+unsigned int gs_effect_get_atomic_uint_result(gs_eresult_t *result)
+{
+	if (!result) {
+		blog(LOG_ERROR,
+		     "gs_effect_get_atomic_uint_result: invalid result");
+		return (unsigned int)-1;
+	}
+	if (result->cur_val.num != 4) {
+		da_resize(result->cur_val, 4);
+	}
+
+	unsigned int val;
+	memcpy(&val, result->cur_val.array, sizeof(unsigned int));
+	return val;
 }
 
 void gs_effect_set_next_sampler(gs_eparam_t *param, gs_samplerstate_t *sampler)

@@ -408,6 +408,11 @@ struct gs_shader_param {
 	gs_samplerstate_t *next_sampler;
 	GLint texture_id;
 	size_t sampler_id;
+	GLuint buffer_id;
+	unsigned int layout_binding;
+	unsigned int layout_offset;
+	bool is_result;
+
 	int array_count;
 
 	struct gs_texture *texture;
@@ -415,6 +420,12 @@ struct gs_shader_param {
 	DARRAY(uint8_t) cur_value;
 	DARRAY(uint8_t) def_value;
 	bool changed;
+};
+
+struct gs_shader_result {
+	char *name;
+	struct gs_shader_param *param;
+	DARRAY(uint8_t) cur_value;
 };
 
 enum attrib_type {
@@ -432,6 +443,8 @@ struct shader_attrib {
 	enum attrib_type type;
 };
 
+struct gs_program;
+
 struct gs_shader {
 	gs_device_t *device;
 	enum gs_shader_type type;
@@ -442,12 +455,17 @@ struct gs_shader {
 
 	DARRAY(struct shader_attrib) attribs;
 	DARRAY(struct gs_shader_param) params;
+	DARRAY(struct gs_shader_result) results;
 	DARRAY(gs_samplerstate_t *) samplers;
 };
 
 struct program_param {
 	GLint obj;
 	struct gs_shader_param *param;
+};
+
+struct program_result {
+	struct gs_shader_result *result;
 };
 
 struct gs_program {
@@ -457,6 +475,7 @@ struct gs_program {
 	struct gs_shader *pixel_shader;
 
 	DARRAY(struct program_param) params;
+	DARRAY(struct program_result) results;
 	DARRAY(GLint) attribs;
 
 	struct gs_program **prev_next;
@@ -466,6 +485,7 @@ struct gs_program {
 extern struct gs_program *gs_program_create(struct gs_device *device);
 extern void gs_program_destroy(struct gs_program *program);
 extern void program_update_params(struct gs_program *shader);
+extern void program_get_results(struct gs_program *shader);
 
 struct gs_vertex_buffer {
 	GLuint vao;

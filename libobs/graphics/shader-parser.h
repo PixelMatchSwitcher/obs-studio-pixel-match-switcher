@@ -42,17 +42,19 @@ enum shader_var_type {
 	SHADER_VAR_INOUT,
 	SHADER_VAR_OUT,
 	SHADER_VAR_UNIFORM,
-	SHADER_VAR_CONST
+	SHADER_VAR_CONST,
 };
 
 struct shader_var {
-	char *type;
+	char *type ;
 	char *name;
 	char *mapping;
 	enum shader_var_type var_type;
 	int array_count;
 	size_t gl_sampler_id; /* optional: used/parsed by GL */
-
+	bool is_result;
+	unsigned int layout_binding;
+	unsigned int layout_offset;
 	DARRAY(uint8_t) default_val;
 };
 
@@ -62,8 +64,11 @@ static inline void shader_var_init(struct shader_var *sv)
 }
 
 static inline void shader_var_init_param(struct shader_var *sv, char *type,
-					 char *name, bool is_uniform,
-					 bool is_const)
+					 char *name,
+					 bool is_uniform, bool is_const,
+					 bool is_result,
+					 unsigned int lo_binding,
+					 unsigned int lo_offset)
 {
 	if (is_uniform)
 		sv->var_type = SHADER_VAR_UNIFORM;
@@ -77,6 +82,9 @@ static inline void shader_var_init_param(struct shader_var *sv, char *type,
 	sv->mapping = NULL;
 	sv->array_count = 0;
 	sv->gl_sampler_id = (size_t)-1;
+	sv->is_result = is_result;
+	sv->layout_binding = lo_binding;
+	sv->layout_offset = lo_offset;
 	da_init(sv->default_val);
 }
 
