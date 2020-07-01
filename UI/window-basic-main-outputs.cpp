@@ -367,9 +367,14 @@ SimpleOutput::SimpleOutput(OBSBasic *main_) : BasicOutputHandler(main_)
 		bool useReplayBuffer = config_get_bool(main->Config(),
 						       "SimpleOutput", "RecRB");
 		if (useReplayBuffer) {
+			obs_data_t *hotkey;
 			const char *str = config_get_string(
 				main->Config(), "Hotkeys", "ReplayBuffer");
-			obs_data_t *hotkey = obs_data_create_from_json(str);
+			if (str)
+				hotkey = obs_data_create_from_json(str);
+			else
+				hotkey = nullptr;
+
 			replayBuffer = obs_output_create("replay_buffer",
 							 Str("ReplayBuffer"),
 							 nullptr, hotkey);
@@ -832,8 +837,7 @@ bool SimpleOutput::StartStreaming(obs_service_t *service)
 
 static void remove_reserved_file_characters(string &s)
 {
-	replace(s.begin(), s.end(), '/', '_');
-	replace(s.begin(), s.end(), '\\', '_');
+	replace(s.begin(), s.end(), '\\', '/');
 	replace(s.begin(), s.end(), '*', '_');
 	replace(s.begin(), s.end(), '?', '_');
 	replace(s.begin(), s.end(), '"', '_');
