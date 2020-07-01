@@ -217,6 +217,25 @@
             }
         },
         {
+            "name": "VIMM",
+            "servers": [
+                {
+                    "name": "Europe: Frankfurt",
+                    "url": "rtmp://eu.vimm.tv/live"
+                },
+                {
+                    "name": "North America: Montreal",
+                    "url": "rtmp://us.vimm.tv/live"
+                }
+            ],
+            "recommended": {
+                "keyint": 2,
+                "max video bitrate": 8000,
+                "max audio bitrate": 320,
+                "x264opts": "scenecut=0"
+            }
+        },
+        {
             "name": "Smashcast",
             "servers": [
                 {
@@ -550,19 +569,6 @@
                 "max video bitrate": 3500,
                 "max audio bitrate": 160
             }
-        },
-        {
-            "name": "CyberGame.TV",
-            "servers": [
-                {
-                    "name": "RU Origin",
-                    "url": "rtmp://st.cybergame.tv:1953/live"
-                },
-                {
-                    "name": "RU Premium",
-                    "url": "rtmp://premium.cybergame.tv:1953/premium"
-                }
-            ]
         },
         {
             "name": "Facebook Live",
@@ -973,10 +979,6 @@
                     "url": "rtmp://eu-central.castr.io/static"
                 },
                 {
-                    "name": "AU South",
-                    "url": "rtmp://au-central.castr.io/static"
-                },
-                {
                     "name": "Singapore",
                     "url": "rtmp://sg-central.castr.io/static"
                 }
@@ -995,21 +997,6 @@
             ]
         },
         {
-            "name": "Stream.live",
-            "servers": [
-                {
-                    "name": "Default",
-                    "url": "rtmp://media.stream.live:1935/live"
-                }
-            ],
-            "recommended": {
-                "keyint": 2,
-                "profile": "main",
-                "max video bitrate": 2500,
-                "max audio bitrate": 160
-            }
-        },
-        {
             "name": "Meridix Live Sports Platform",
             "servers": [
                 {
@@ -1022,40 +1009,30 @@
             }
         },
         {
-            "name": "Afreeca.TV",
+            "name": "AfreecaTV",
+            "alt_names": ["아프리카TV", "Afreeca.TV"],
             "servers": [
                 {
+                    "name": "Asia : Korea",
+                    "url": "rtmp://rtmpmanager-freecat.afreeca.tv/app"
+                },
+                {
                     "name": "North America : US East",
-                    "url": "rtmp://rtmpmanager-aws-en-east.afreeca.tv/live"
+                    "url": "rtmp://rtmp-esu.afreecatv.com/app"
                 },
                 {
                     "name": "North America : US West",
-                    "url": "rtmp://rtmpmanager-aws-en-west.afreeca.tv/live"
+                    "url": "rtmp://rtmp-wsu.afreecatv.com/app"
                 },
                 {
                     "name": "Asia : Singapore",
-                    "url": "rtmp://rtmpmanager-aws-sg.afreeca.tv/live"
+                    "url": "rtmp://rtmp-sgp.afreecatv.com/app"
                 }
             ],
             "recommended": {
-                "keyint": 1,
+                "keyint": 2,
                 "profile": "main",
-                "max video bitrate": 5000,
-                "max audio bitrate": 192
-            }
-        },
-        {
-            "name": "아프리카TV",
-            "servers": [
-                {
-                    "name": "Korea",
-                    "url": "rtmp://rtmpmanager-freecat.afreeca.tv/app/"
-                }
-            ],
-            "recommended": {
-                "keyint": 1,
-                "profile": "main",
-                "max video bitrate": 5000,
+                "max video bitrate": 8000,
                 "max audio bitrate": 192
             }
         },
@@ -1374,8 +1351,8 @@
             "recommended": {
                 "keyint": 2,
                 "profile": "main",
-                "max video bitrate": 2800,
-                "max audio bitrate": 128
+                "max video bitrate": 4000,
+                "max audio bitrate": 192
             }
         },
         {
@@ -1394,13 +1371,20 @@
             }
         },
         {
-            "name": "Madcat",
+            "name": "Trovo",
+            "alt_names": ["Madcat"],
             "servers": [
                 {
                     "name": "Default",
-                    "url": "rtmp://73846.livepush.myqcloud.com/live/"
+                    "url": "rtmp://livepush.trovo.live/live/"
                 }
-            ]
+            ],
+            "recommended": {
+                "keyint": 2,
+                "max video bitrate": 9000,
+                "max audio bitrate": 160,
+                "x264opts": "scenecut=0"
+            }
         },
         {
             "name": "Mixcloud",
@@ -1953,6 +1937,79 @@
             ],
             "recommended": {
                 "x264opts": "scenecut=0"
+            }
+        },
+        {
+            "name": "AngelThump",
+            "servers": [
+                {
+                    "name": "Auto",
+                    "url": "rtmp://ingest.angelthump.com/live"
+                },
+                {
+                    "name": "New York 3",
+                    "url": "rtmp://nyc-ingest.angelthump.com:1935/live"
+                },
+                {
+                    "name": "San Francisco 2",
+                    "url": "rtmp://sfo-ingest.angelthump.com:1935/live"
+                },
+                {
+                    "name": "Singapore 1",
+                    "url": "rtmp://sgp-ingest.angelthump.com:1935/live"
+                },
+                {
+                    "name": "London 1",
+                    "url": "rtmp://lon-ingest.angelthump.com:1935/live"
+                },
+                {
+                    "name": "Frankfurt 1",
+                    "url": "rtmp://fra-ingest.angelthump.com:1935/live"
+                },
+                {
+                    "name": "Toronto 1",
+                    "url": "rtmp://tor-ingest.angelthump.com:1935/live"
+                },
+                {
+                    "name": "Bangalore 1",
+                    "url": "rtmp://blr-ingest.angelthump.com:1935/live"
+                },
+                {
+                    "name": "Amsterdam 3",
+                    "url": "rtmp://ams-ingest.angelthump.com:1935/live"
+                }
+            ],
+            "recommended": {
+                "keyint": 2,
+                "profile": "high",
+                "max video bitrate": 3500,
+                "max audio bitrate": 160
+            }
+        },
+        {
+            "name": "weabook.live",
+            "servers": [
+                {
+                    "name": "N.Virgina, US",
+                    "url": "rtmp://us-api.weabook.live/live"
+                },
+                {
+                    "name": "Singapore, SG",
+                    "url": "rtmp://sg-api.weabook.live/live"
+                },
+                {
+                    "name": "Tokyo, JP",
+                    "url": "rtmp://jp-api.weabook.live/live"
+                },
+                {
+                    "name": "Premium Streaming",
+                    "url": "rtmp://premium.rtmp.weabook.live/live"
+                }
+            ],
+            "recommended": {
+                "keyint": 2,
+                "max audio bitrate": 256,
+                "max video bitrate": 20480
             }
         }
     ]

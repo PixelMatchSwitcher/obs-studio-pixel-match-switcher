@@ -63,11 +63,15 @@ struct vk_queue_data {
 	uint32_t fam_idx;
 };
 
-struct vk_cmd_pool_data {
+struct vk_frame_data {
 	VkCommandPool cmd_pool;
-	VkCommandBuffer cmd_buffers[OBJ_MAX];
-	VkFence fences[OBJ_MAX];
-	bool cmd_buffer_busy[OBJ_MAX];
+	VkCommandBuffer cmd_buffer;
+	VkFence fence;
+	bool cmd_buffer_busy;
+};
+
+struct vk_family_data {
+	struct vk_frame_data frames[OBJ_MAX];
 	uint32_t image_count;
 };
 
@@ -84,7 +88,7 @@ struct vk_data {
 	struct vk_queue_data queues[OBJ_MAX];
 	uint32_t queue_count;
 
-	struct vk_cmd_pool_data cmd_pools[OBJ_MAX];
+	struct vk_family_data families[OBJ_MAX];
 	VkExternalMemoryProperties external_mem_props;
 
 	struct vk_inst_data *inst_data;
@@ -173,36 +177,37 @@ static inline struct vk_data *get_device_data(void *dev)
 	return &device_data[idx];
 }
 
-static void vk_shtex_clear_fence(struct vk_data *data,
-				 struct vk_cmd_pool_data *pool_data,
-				 uint32_t image_idx)
+static void vk_shtex_clear_fence(const struct vk_data *data,
+				 struct vk_frame_data *frame_data)
 {
-	VkFence fence = pool_data->fences[image_idx];
-	if (pool_data->cmd_buffer_busy[image_idx]) {
+	const VkFence fence = frame_data->fence;
+	if (frame_data->cmd_buffer_busy) {
 		VkDevice device = data->device;
-		struct vk_device_funcs *funcs = &data->funcs;
+		const struct vk_device_funcs *funcs = &data->funcs;
 		funcs->WaitForFences(device, 1, &fence, VK_TRUE, ~0ull);
 		funcs->ResetFences(device, 1, &fence);
-		pool_data->cmd_buffer_busy[image_idx] = false;
+		frame_data->cmd_buffer_busy = false;
 	}
 }
 
 static void vk_shtex_wait_until_pool_idle(struct vk_data *data,
-					  struct vk_cmd_pool_data *pool_data)
+					  struct vk_family_data *family_data)
 {
-	for (uint32_t image_idx = 0; image_idx < pool_data->image_count;
+	for (uint32_t image_idx = 0; image_idx < family_data->image_count;
 	     image_idx++) {
-		vk_shtex_clear_fence(data, pool_data, image_idx);
+		struct vk_frame_data *frame_data =
+			&family_data->frames[image_idx];
+		if (frame_data->cmd_pool != VK_NULL_HANDLE)
+			vk_shtex_clear_fence(data, frame_data);
 	}
 }
 
 static void vk_shtex_wait_until_idle(struct vk_data *data)
 {
-	for (uint32_t fam_idx = 0; fam_idx < _countof(data->cmd_pools);
+	for (uint32_t fam_idx = 0; fam_idx < _countof(data->families);
 	     fam_idx++) {
-		struct vk_cmd_pool_data *pool_data = &data->cmd_pools[fam_idx];
-		if (pool_data->cmd_pool != VK_NULL_HANDLE)
-			vk_shtex_wait_until_pool_idle(data, pool_data);
+		struct vk_family_data *family_data = &data->families[fam_idx];
+		vk_shtex_wait_until_pool_idle(data, family_data);
 	}
 }
 
@@ -719,50 +724,49 @@ static bool vk_shtex_init(struct vk_data *data, HWND window,
 	return false;
 }
 
-static void vk_shtex_create_cmd_pool_objects(struct vk_data *data,
-					     uint32_t fam_idx,
-					     uint32_t image_count)
+static void vk_shtex_create_family_objects(struct vk_data *data,
+					   uint32_t fam_idx,
+					   uint32_t image_count)
 {
-	struct vk_cmd_pool_data *pool_data = &data->cmd_pools[fam_idx];
+	struct vk_family_data *family_data = &data->families[fam_idx];
 
-	VkCommandPoolCreateInfo cpci;
-	cpci.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	cpci.pNext = NULL;
-	cpci.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	cpci.queueFamilyIndex = fam_idx;
-
-	VkResult res = data->funcs.CreateCommandPool(
-		data->device, &cpci, data->ac, &pool_data->cmd_pool);
-	debug_res("CreateCommandPool", res);
-
-	VkCommandBufferAllocateInfo cbai;
-	cbai.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cbai.pNext = NULL;
-	cbai.commandPool = pool_data->cmd_pool;
-	cbai.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cbai.commandBufferCount = image_count;
-
-	res = data->funcs.AllocateCommandBuffers(data->device, &cbai,
-						 pool_data->cmd_buffers);
-	debug_res("AllocateCommandBuffers", res);
 	for (uint32_t image_index = 0; image_index < image_count;
 	     image_index++) {
-		/* Dispatch table something or other. Well-designed API. */
-		VkCommandBuffer cmd_buffer =
-			pool_data->cmd_buffers[image_index];
-		*(void **)cmd_buffer = *(void **)(data->device);
+		struct vk_frame_data *frame_data =
+			&family_data->frames[image_index];
 
-		VkFence *fence = &pool_data->fences[image_index];
+		VkCommandPoolCreateInfo cpci;
+		cpci.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		cpci.pNext = NULL;
+		cpci.flags = 0;
+		cpci.queueFamilyIndex = fam_idx;
+
+		VkResult res = data->funcs.CreateCommandPool(
+			data->device, &cpci, data->ac, &frame_data->cmd_pool);
+		debug_res("CreateCommandPool", res);
+
+		VkCommandBufferAllocateInfo cbai;
+		cbai.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		cbai.pNext = NULL;
+		cbai.commandPool = frame_data->cmd_pool;
+		cbai.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		cbai.commandBufferCount = 1;
+
+		res = data->funcs.AllocateCommandBuffers(
+			data->device, &cbai, &frame_data->cmd_buffer);
+		debug_res("AllocateCommandBuffers", res);
+		*(void **)frame_data->cmd_buffer = *(void **)(data->device);
+
 		VkFenceCreateInfo fci = {0};
 		fci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fci.pNext = NULL;
 		fci.flags = 0;
 		res = data->funcs.CreateFence(data->device, &fci, data->ac,
-					      fence);
+					      &frame_data->fence);
 		debug_res("CreateFence", res);
 	}
 
-	pool_data->image_count = image_count;
+	family_data->image_count = image_count;
 }
 
 static void vk_shtex_destroy_fence(struct vk_data *data, bool *cmd_buffer_busy,
@@ -779,21 +783,23 @@ static void vk_shtex_destroy_fence(struct vk_data *data, bool *cmd_buffer_busy,
 	*fence = VK_NULL_HANDLE;
 }
 
-static void
-vk_shtex_destroy_cmd_pool_objects(struct vk_data *data,
-				  struct vk_cmd_pool_data *pool_data)
+static void vk_shtex_destroy_family_objects(struct vk_data *data,
+					    struct vk_family_data *family_data)
 {
-	for (uint32_t image_idx = 0; image_idx < pool_data->image_count;
+	for (uint32_t image_idx = 0; image_idx < family_data->image_count;
 	     image_idx++) {
-		bool *cmd_buffer_busy = &pool_data->cmd_buffer_busy[image_idx];
-		VkFence *fence = &pool_data->fences[image_idx];
+		struct vk_frame_data *frame_data =
+			&family_data->frames[image_idx];
+		bool *cmd_buffer_busy = &frame_data->cmd_buffer_busy;
+		VkFence *fence = &frame_data->fence;
 		vk_shtex_destroy_fence(data, cmd_buffer_busy, fence);
+
+		data->funcs.DestroyCommandPool(data->device,
+					       frame_data->cmd_pool, data->ac);
+		frame_data->cmd_pool = VK_NULL_HANDLE;
 	}
 
-	data->funcs.DestroyCommandPool(data->device, pool_data->cmd_pool,
-				       data->ac);
-	pool_data->cmd_pool = VK_NULL_HANDLE;
-	pool_data->image_count = 0;
+	family_data->image_count = 0;
 }
 
 static void vk_shtex_capture(struct vk_data *data,
@@ -825,21 +831,27 @@ static void vk_shtex_capture(struct vk_data *data,
 			fam_idx = data->queues[i].fam_idx;
 	}
 
-	if (fam_idx >= _countof(data->cmd_pools))
+	if (fam_idx >= _countof(data->families))
 		return;
 
-	struct vk_cmd_pool_data *pool_data = &data->cmd_pools[fam_idx];
-	VkCommandPool *pool = &pool_data->cmd_pool;
+	struct vk_family_data *family_data = &data->families[fam_idx];
 	const uint32_t image_count = swap->image_count;
-	if (pool_data->image_count < image_count) {
-		if (*pool != VK_NULL_HANDLE)
-			vk_shtex_destroy_cmd_pool_objects(data, pool_data);
-		vk_shtex_create_cmd_pool_objects(data, fam_idx, image_count);
+	if (family_data->image_count < image_count) {
+		if (family_data->image_count > 0)
+			vk_shtex_destroy_family_objects(data, family_data);
+		vk_shtex_create_family_objects(data, fam_idx, image_count);
 	}
 
-	vk_shtex_clear_fence(data, pool_data, image_index);
+	struct vk_frame_data *frame_data = &family_data->frames[image_index];
+	vk_shtex_clear_fence(data, frame_data);
 
-	VkCommandBuffer cmd_buffer = pool_data->cmd_buffers[image_index];
+	res = funcs->ResetCommandPool(data->device, frame_data->cmd_pool, 0);
+
+#ifdef MORE_DEBUGGING
+	debug_res("ResetCommandPool", res);
+#endif
+
+	const VkCommandBuffer cmd_buffer = frame_data->cmd_buffer;
 	res = funcs->BeginCommandBuffer(cmd_buffer, &begin_info);
 
 #ifdef MORE_DEBUGGING
@@ -854,9 +866,9 @@ static void vk_shtex_capture(struct vk_data *data,
 		imb.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		imb.pNext = NULL;
 		imb.srcAccessMask = 0;
-		imb.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imb.dstAccessMask = 0;
 		imb.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imb.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		imb.newLayout = VK_IMAGE_LAYOUT_GENERAL;
 		imb.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		imb.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		imb.image = swap->export_image;
@@ -868,8 +880,8 @@ static void vk_shtex_capture(struct vk_data *data,
 
 		funcs->CmdPipelineBarrier(cmd_buffer,
 					  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-					  VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
-					  NULL, 0, NULL, 1, &imb);
+					  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0,
+					  0, NULL, 0, NULL, 1, &imb);
 
 		swap->layout_initialized = true;
 	}
@@ -897,9 +909,9 @@ static void vk_shtex_capture(struct vk_data *data,
 
 	dst_mb->sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	dst_mb->pNext = NULL;
-	dst_mb->srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	dst_mb->srcAccessMask = 0;
 	dst_mb->dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	dst_mb->oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	dst_mb->oldLayout = VK_IMAGE_LAYOUT_GENERAL;
 	dst_mb->newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	dst_mb->srcQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
 	dst_mb->dstQueueFamilyIndex = fam_idx;
@@ -911,8 +923,7 @@ static void vk_shtex_capture(struct vk_data *data,
 	dst_mb->subresourceRange.layerCount = 1;
 
 	funcs->CmdPipelineBarrier(cmd_buffer,
-				  VK_PIPELINE_STAGE_TRANSFER_BIT |
-					  VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+				  VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 				  VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0,
 				  NULL, 2, mb);
 
@@ -953,11 +964,15 @@ static void vk_shtex_capture(struct vk_data *data,
 	src_mb->oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	src_mb->newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+	dst_mb->srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	dst_mb->dstAccessMask = 0;
+	dst_mb->oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	dst_mb->newLayout = VK_IMAGE_LAYOUT_GENERAL;
 	dst_mb->srcQueueFamilyIndex = fam_idx;
 	dst_mb->dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
 
 	funcs->CmdPipelineBarrier(cmd_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				  VK_PIPELINE_STAGE_TRANSFER_BIT |
+				  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT |
 					  VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 				  0, 0, NULL, 0, NULL, 2, mb);
 
@@ -976,7 +991,7 @@ static void vk_shtex_capture(struct vk_data *data,
 	submit_info.signalSemaphoreCount = 0;
 	submit_info.pSignalSemaphores = NULL;
 
-	VkFence fence = pool_data->fences[image_index];
+	const VkFence fence = frame_data->fence;
 	res = funcs->QueueSubmit(queue, 1, &submit_info, fence);
 
 #ifdef MORE_DEBUGGING
@@ -984,7 +999,7 @@ static void vk_shtex_capture(struct vk_data *data,
 #endif
 
 	if (res == VK_SUCCESS)
-		pool_data->cmd_buffer_busy[image_index] = true;
+		frame_data->cmd_buffer_busy = true;
 }
 
 static inline bool valid_rect(struct vk_swap_data *swap)
@@ -1296,6 +1311,7 @@ static VkResult VKAPI OBS_CreateDevice(VkPhysicalDevice phy_device,
 	GETADDR(DestroyImage);
 	GETADDR(GetImageMemoryRequirements);
 	GETADDR(GetImageMemoryRequirements2);
+	GETADDR(ResetCommandPool);
 	GETADDR(BeginCommandBuffer);
 	GETADDR(EndCommandBuffer);
 	GETADDR(CmdCopyImage);
@@ -1393,13 +1409,13 @@ static void VKAPI OBS_DestroyDevice(VkDevice device,
 		return;
 
 	if (data->valid) {
-		for (uint32_t fam_idx = 0; fam_idx < _countof(data->cmd_pools);
+		for (uint32_t fam_idx = 0; fam_idx < _countof(data->families);
 		     fam_idx++) {
-			struct vk_cmd_pool_data *pool_data =
-				&data->cmd_pools[fam_idx];
-			if (pool_data->cmd_pool != VK_NULL_HANDLE) {
-				vk_shtex_destroy_cmd_pool_objects(data,
-								  pool_data);
+			struct vk_family_data *family_data =
+				&data->families[fam_idx];
+			if (family_data->image_count > 0) {
+				vk_shtex_destroy_family_objects(data,
+								family_data);
 			}
 		}
 	}
