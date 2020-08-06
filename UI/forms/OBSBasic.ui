@@ -203,7 +203,7 @@
      <x>0</x>
      <y>0</y>
      <width>1079</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -376,12 +376,6 @@
     <property name="title">
      <string>Basic.MainMenu.View</string>
     </property>
-    <widget class="QMenu" name="viewMenuToolbars">
-     <property name="title">
-      <string>Basic.MainMenu.View.Toolbars</string>
-     </property>
-     <addaction name="toggleListboxToolbars"/>
-    </widget>
     <widget class="QMenu" name="viewMenuDocks">
      <property name="title">
       <string>Basic.MainMenu.View.Docks</string>
@@ -407,7 +401,7 @@
     <addaction name="actionFullscreenInterface"/>
     <addaction name="separator"/>
     <addaction name="viewMenuDocks"/>
-    <addaction name="viewMenuToolbars"/>
+    <addaction name="toggleListboxToolbars"/>
     <addaction name="toggleSourceIcons"/>
     <addaction name="toggleStatusBar"/>
     <addaction name="separator"/>
@@ -431,7 +425,7 @@
   <widget class="OBSBasicStatusBar" name="statusbar"/>
   <widget class="OBSDock" name="scenesDock">
    <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable</set>
    </property>
    <property name="windowTitle">
     <string>Basic.Main.Scenes</string>
@@ -566,7 +560,7 @@
   </widget>
   <widget class="OBSDock" name="sourcesDock">
    <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable</set>
    </property>
    <property name="windowTitle">
     <string>Basic.Main.Sources</string>
@@ -702,7 +696,7 @@
   </widget>
   <widget class="OBSDock" name="mixerDock">
    <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable</set>
    </property>
    <property name="windowTitle">
     <string>Mixer</string>
@@ -753,7 +747,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>71</width>
+           <width>82</width>
            <height>16</height>
           </rect>
          </property>
@@ -807,7 +801,7 @@
            <x>0</x>
            <y>0</y>
            <width>16</width>
-           <height>28</height>
+           <height>16</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -842,7 +836,7 @@
   </widget>
   <widget class="OBSDock" name="transitionsDock">
    <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable</set>
    </property>
    <property name="windowTitle">
     <string>Basic.SceneTransitions</string>
@@ -883,106 +877,20 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QComboBox" name="transitions">
-          <property name="minimumSize">
-           <size>
-            <width>120</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="accessibleName">
-           <string>Transition</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <property name="spacing">
            <number>4</number>
           </property>
           <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
+           <widget class="QComboBox" name="transitions">
+            <property name="minimumSize">
              <size>
-              <width>40</width>
-              <height>20</height>
+              <width>120</width>
+              <height>0</height>
              </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="transitionAdd">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>22</width>
-              <height>22</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Basic.AddTransition</string>
             </property>
             <property name="accessibleName">
-             <string>Basic.AddTransition</string>
-            </property>
-            <property name="text">
-             <string notr="true"/>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/res/images/add.png</normaloff>:/res/images/add.png</iconset>
-            </property>
-            <property name="flat">
-             <bool>true</bool>
-            </property>
-            <property name="themeID" stdset="0">
-             <string notr="true">addIconSmall</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="transitionRemove">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>22</width>
-              <height>22</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Basic.RemoveTransition</string>
-            </property>
-            <property name="accessibleName">
-             <string>Basic.RemoveTransition</string>
-            </property>
-            <property name="text">
-             <string notr="true"/>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/res/images/list_remove.png</normaloff>:/res/images/list_remove.png</iconset>
-            </property>
-            <property name="flat">
-             <bool>true</bool>
-            </property>
-            <property name="themeID" stdset="0">
-             <string notr="true">removeIconSmall</string>
+             <string>Transition</string>
             </property>
            </widget>
           </item>
@@ -1089,7 +997,7 @@
   </widget>
   <widget class="OBSDock" name="controlsDock">
    <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable</set>
    </property>
    <property name="windowTitle">
     <string>Basic.Main.Controls</string>
@@ -1670,7 +1578,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Basic.MainMenu.View.Toolbars.Listboxes</string>
+    <string>Basic.MainMenu.View.ListboxToolbars</string>
    </property>
   </action>
   <action name="toggleStatusBar">

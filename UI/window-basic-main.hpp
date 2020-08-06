@@ -21,10 +21,6 @@
 #include <QAction>
 #include <QWidgetAction>
 #include <QSystemTrayIcon>
-#ifdef _WIN32
-#include <QWinTaskbarButton>
-#include <QWinTaskbarProgress>
-#endif
 #include <QStyledItemDelegate>
 #include <obs.hpp>
 #include <vector>
@@ -38,6 +34,7 @@
 #include "window-projector.hpp"
 #include "window-basic-about.hpp"
 #include "auth-base.hpp"
+#include "log-viewer.hpp"
 
 #include <obs-frontend-internal.hpp>
 
@@ -166,6 +163,7 @@ class OBSBasic : public OBSMainWindow {
 	friend class ReplayBufferButton;
 	friend class ExtraBrowsersModel;
 	friend class ExtraBrowsersDelegate;
+	friend struct BasicOutputHandler;
 	friend struct OBSStudioAPI;
 
 	enum class MoveDir { Up, Down, Left, Right };
@@ -213,6 +211,8 @@ private:
 	QPointer<QDockWidget> statsDock;
 	QPointer<OBSAbout> about;
 
+	OBSLogViewer *logView;
+
 	QPointer<QTimer> cpuUsageTimer;
 	QPointer<QTimer> diskFullTimer;
 
@@ -256,6 +256,9 @@ private:
 	QScopedPointer<QPushButton> pause;
 	QScopedPointer<QPushButton> replay;
 
+	QPointer<QPushButton> vcamButton;
+	bool vcamEnabled = false;
+
 	QScopedPointer<QSystemTrayIcon> trayIcon;
 	QPointer<QAction> sysTrayStream;
 	QPointer<QAction> sysTrayRecord;
@@ -277,11 +280,6 @@ private:
 	QPointer<QMenu> deinterlaceMenu;
 	QPointer<QMenu> perSceneTransitionMenu;
 	QPointer<QObject> shortcutFilter;
-
-#ifdef _WIN32
-	QWinTaskbarButton *taskBtn = new QWinTaskbarButton(this);
-	QWinTaskbarProgress *taskProg = taskBtn->progress();
-#endif
 
 	QPointer<QWidget> programWidget;
 	QPointer<QVBoxLayout> programLayout;
@@ -382,7 +380,7 @@ private:
 	QModelIndexList GetAllSelectedSourceItems();
 
 	obs_hotkey_pair_id streamingHotkeys, recordingHotkeys, pauseHotkeys,
-		replayBufHotkeys, togglePreviewHotkeys;
+		replayBufHotkeys, vcamHotkeys, togglePreviewHotkeys;
 	obs_hotkey_id forceStreamingStopHotkey;
 
 	void InitDefaultTransitions();
@@ -437,6 +435,8 @@ private:
 	obs_hotkey_id togglePreviewProgramHotkey = 0;
 	obs_hotkey_id transitionHotkey = 0;
 	obs_hotkey_id statsHotkey = 0;
+	obs_hotkey_id screenshotHotkey = 0;
+	obs_hotkey_id sourceScreenshotHotkey = 0;
 	int quickTransitionIdCounter = 1;
 	bool overridingTransition = false;
 
@@ -530,6 +530,8 @@ private:
 	void UpdateProjectorHideCursor();
 	void UpdateProjectorAlwaysOnTop(bool top);
 
+	QPointer<QObject> screenshotData;
+
 public slots:
 	void DeferSaveBegin();
 	void DeferSaveEnd();
@@ -560,6 +562,12 @@ public slots:
 	void ReplayBufferSave();
 	void ReplayBufferStopping();
 	void ReplayBufferStop(int code);
+
+	void StartVirtualCam();
+	void StopVirtualCam();
+
+	void OnVirtualCamStart();
+	void OnVirtualCamStop(int code);
 
 	void SaveProjectDeferred();
 	void SaveProject();
@@ -603,7 +611,7 @@ private slots:
 
 	void ProcessHotkey(obs_hotkey_id id, bool pressed);
 
-	void AddTransition();
+	void AddTransition(QString id);
 	void RenameTransition();
 	void TransitionClicked();
 	void TransitionStopped();
@@ -740,6 +748,8 @@ public:
 		return os_atomic_load_bool(&previewProgramMode);
 	}
 
+	inline bool VCamEnabled() const { return vcamEnabled; }
+
 	bool StreamingActive() const;
 	bool Active() const;
 
@@ -747,6 +757,7 @@ public:
 	int ResetVideo();
 	bool ResetAudio();
 
+	void AddVCamButton();
 	void ResetOutputs();
 
 	void ResetAudioDevice(const char *sourceId, const char *deviceId,
@@ -887,7 +898,12 @@ private slots:
 
 	void on_streamButton_clicked();
 	void on_recordButton_clicked();
+	void VCamButtonClicked();
 	void on_settingsButton_clicked();
+	void Screenshot(OBSSource source_ = nullptr);
+	void ScreenshotSelectedSource();
+	void ScreenshotProgram();
+	void ScreenshotScene();
 
 	void on_actionHelpPortal_triggered();
 	void on_actionWebsite_triggered();
@@ -921,7 +937,6 @@ private slots:
 	void on_toggleSourceIcons_toggled(bool visible);
 
 	void on_transitions_currentIndexChanged(int index);
-	void on_transitionAdd_clicked();
 	void on_transitionRemove_clicked();
 	void on_transitionProps_clicked();
 	void on_transitionDuration_valueChanged(int value);

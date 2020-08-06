@@ -340,10 +340,6 @@ static void fill_servers(obs_property_t *servers_prop, json_t *service,
 		return;
 	}
 
-	if (strcmp(name, "Mixer.com - FTL") == 0) {
-		obs_property_list_add_string(
-			servers_prop, obs_module_text("Server.Auto"), "auto");
-	}
 	if (strcmp(name, "Twitch") == 0) {
 		if (fill_twitch_servers(servers_prop))
 			return;
@@ -492,6 +488,8 @@ static void apply_video_encoder_settings(obs_data_t *settings,
 		const char *profile = json_string_value(item);
 		obs_data_set_string(settings, "profile", profile);
 	}
+
+	obs_data_item_release(&enc_item);
 
 	item = json_object_get(recommended, "max video bitrate");
 	if (json_is_integer(item)) {
