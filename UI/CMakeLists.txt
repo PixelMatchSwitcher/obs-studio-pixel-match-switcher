@@ -29,16 +29,6 @@ else()
 	set(TWITCH_ENABLED TRUE)
 endif()
 
-if(NOT DEFINED MIXER_CLIENTID OR "${MIXER_CLIENTID}" STREQUAL "" OR
-   NOT DEFINED MIXER_HASH     OR "${MIXER_HASH}"     STREQUAL "" OR
-   NOT BROWSER_AVAILABLE_INTERNAL)
-	set(MIXER_ENABLED FALSE)
-	set(MIXER_CLIENTID "")
-	set(MIXER_HASH "0")
-else()
-	set(MIXER_ENABLED TRUE)
-endif()
-
 if(NOT DEFINED RESTREAM_CLIENTID OR "${RESTREAM_CLIENTID}" STREQUAL "" OR
    NOT DEFINED RESTREAM_HASH     OR "${RESTREAM_HASH}"     STREQUAL "" OR
    NOT BROWSER_AVAILABLE_INTERNAL)
@@ -56,10 +46,8 @@ configure_file(
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 set(CMAKE_AUTOMOC TRUE)
 
+find_package(Qt5Widgets ${FIND_MODE})
 find_package(Qt5Svg ${FIND_MODE})
-if(WIN32)
-	find_package(Qt5WinExtras ${FIND_MODE})
-endif()
 find_package(Qt5Xml ${FIND_MODE})
 
 find_package(FFmpeg REQUIRED COMPONENTS avcodec avutil avformat)
@@ -169,15 +157,6 @@ if(BROWSER_AVAILABLE_INTERNAL)
 			)
 	endif()
 
-	if(MIXER_ENABLED)
-		list(APPEND obs_PLATFORM_SOURCES
-			auth-mixer.cpp
-			)
-		list(APPEND obs_PLATFORM_HEADERS
-			auth-mixer.hpp
-			)
-	endif()
-
 	if(RESTREAM_ENABLED)
 		list(APPEND obs_PLATFORM_SOURCES
 			auth-restream.cpp
@@ -222,6 +201,7 @@ set(obs_SOURCES
 	window-basic-main-outputs.cpp
 	window-basic-source-select.cpp
 	window-basic-settings-stream.cpp
+	window-basic-main-screenshot.cpp
 	window-basic-auto-config-test.cpp
 	window-basic-main-scene-collections.cpp
 	window-basic-main-transitions.cpp
@@ -235,6 +215,7 @@ set(obs_SOURCES
 	window-basic-preview.cpp
 	window-basic-about.cpp
 	window-importer.cpp
+	media-controls.cpp
 	window-namedialog.cpp
 	window-log-reply.cpp
 	window-projector.cpp
@@ -255,7 +236,9 @@ set(obs_SOURCES
 	volume-control.cpp
 	adv-audio-control.cpp
 	item-widget-helpers.cpp
+	context-bar-controls.cpp
 	horizontal-scroll-area.cpp
+	context-bar-controls-devices.cpp
 	vertical-scroll-area.cpp
 	visibility-item-widget.cpp
 	slider-absoluteset-style.cpp
@@ -265,7 +248,12 @@ set(obs_SOURCES
 	source-label.cpp
 	remote-text.cpp
 	audio-encoders.cpp
-	qt-wrappers.cpp)
+	qt-wrappers.cpp
+	log-viewer.cpp
+	obs-proxy-style.cpp
+	locked-checkbox.cpp
+	visibility-checkbox.cpp
+	media-slider.cpp)
 
 set(obs_HEADERS
 	${obs_PLATFORM_HEADERS}
@@ -290,6 +278,7 @@ set(obs_HEADERS
 	window-basic-transform.hpp
 	window-basic-preview.hpp
 	window-importer.hpp
+	media-controls.hpp
 	window-namedialog.hpp
 	window-log-reply.hpp
 	window-projector.hpp
@@ -310,11 +299,14 @@ set(obs_HEADERS
 	mute-checkbox.hpp
 	record-button.hpp
 	ui-validation.hpp
+	screenshot-obj.hpp
 	url-push-button.hpp
 	volume-control.hpp
 	adv-audio-control.hpp
 	item-widget-helpers.hpp
 	visibility-checkbox.hpp
+	context-bar-controls.hpp
+	context-bar-controls-devices.hpp
 	locked-checkbox.hpp
 	horizontal-scroll-area.hpp
 	expand-checkbox.hpp
@@ -328,7 +320,11 @@ set(obs_HEADERS
 	remote-text.hpp
 	audio-encoders.hpp
 	qt-wrappers.hpp
-	clickable-label.hpp)
+	clickable-label.hpp
+	log-viewer.hpp
+	obs-proxy-style.hpp
+	obs-proxy-style.hpp
+	media-slider.hpp)
 
 set(obs_importers_HEADERS
 	importers/importers.hpp)
@@ -344,6 +340,13 @@ source_group("importers\\Source Files" FILES ${obs_importers_SOURCES})
 source_group("importers\\Header Files" FILES ${obs_importers_HEADERS})
 
 set(obs_UI
+	forms/source-toolbar/browser-source-toolbar.ui
+	forms/source-toolbar/device-select-toolbar.ui
+	forms/source-toolbar/game-capture-toolbar.ui
+	forms/source-toolbar/image-source-toolbar.ui
+	forms/source-toolbar/color-source-toolbar.ui
+	forms/source-toolbar/text-source-toolbar.ui
+	forms/source-toolbar/media-controls.ui
 	forms/NameDialog.ui
 	forms/AutoConfigStartPage.ui
 	forms/AutoConfigVideoPage.ui
@@ -388,8 +391,6 @@ if(WIN32)
 	set_target_properties(obs
 		PROPERTIES
 			OUTPUT_NAME "obs${_output_suffix}")
-	target_link_libraries(obs
-			Qt5::WinExtras)
 endif()
 
 target_link_libraries(obs

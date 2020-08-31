@@ -1,23 +1,38 @@
 project(obs-filters)
 
 option(DISABLE_SPEEXDSP "Disable building of the SpeexDSP-based Noise Suppression filter" OFF)
+option(DISABLE_RNNOISE "Disable building of the RNNoise-based Noise Suppression filter" OFF)
 
 if(DISABLE_SPEEXDSP)
 	message(STATUS "SpeexDSP support disabled")
 	set(LIBSPEEXDSP_FOUND FALSE)
 else()
-	find_package(Libspeexdsp QUIET)
-
-	if(NOT LIBSPEEXDSP_FOUND)
-		message(STATUS "SpeexDSP support not found")
-		set(LIBSPEEXDSP_FOUND FALSE)
-	else()
-		message(STATUS "SpeexDSP supported")
-		set(obs-filters_LIBSPEEXDSP_SOURCES
-			noise-suppress-filter.c)
-		set(obs-filters_LIBSPEEXDSP_LIBRARIES
-			${LIBSPEEXDSP_LIBRARIES})
+	find_package(Libspeexdsp)
+	if(LIBSPEEXDSP_FOUND)
+		add_definitions(-DLIBSPEEXDSP_ENABLED)
 	endif()
+endif()
+
+if(DISABLE_RNNOISE)
+	message(STATUS "RNNoise support disabled")
+	set(LIBRNNOISE_FOUND FALSE)
+else()
+	find_package(Librnnoise)
+	if(LIBRNNOISE_FOUND)
+		add_definitions(-DLIBRNNOISE_ENABLED)
+	endif()
+
+endif()
+
+if(LIBSPEEXDSP_FOUND OR LIBRNNOISE_FOUND)
+	message(STATUS "Noise Reduction effect enabled")
+	set(obs-filters_NOISEREDUCTION_SOURCES
+		noise-suppress-filter.c)
+	set(obs-filters_NOISEREDUCTION_LIBRARIES
+		${LIBSPEEXDSP_LIBRARIES} ${LIBRNNOISE_LIBRARIES})
+	set(NOISEREDUCTION_ENABLED TRUE)
+else()
+	set(NOISEREDUCTION_ENABLED FALSE)
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/obs-filters-config.h.in"
@@ -25,7 +40,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/obs-filters-config.h.in"
 
 set(obs-filters_config_HEADERS
 	"${CMAKE_BINARY_DIR}/plugins/obs-filters/config/obs-filters-config.h")
-include_directories(${LIBSPEEXDSP_INCLUDE_DIRS}
+include_directories(${LIBSPEEXDSP_INCLUDE_DIRS} ${LIBRNNOISE_INCLUDE_DIRS}
 	"${CMAKE_BINARY_DIR}/plugins/obs-filters/config")
 
 if(MSVC)
@@ -64,11 +79,11 @@ endif()
 add_library(obs-filters MODULE
 	${obs-filters_SOURCES}
 	${obs-filters_config_HEADERS}
-	${obs-filters_LIBSPEEXDSP_SOURCES})
+	${obs-filters_NOISEREDUCTION_SOURCES})
 target_link_libraries(obs-filters
 	libobs
 	${obs-filters_PLATFORM_DEPS}
-	${obs-filters_LIBSPEEXDSP_LIBRARIES})
+	${obs-filters_NOISEREDUCTION_LIBRARIES})
 set_target_properties(obs-filters PROPERTIES FOLDER "plugins")
 
 install_obs_plugin_with_data(obs-filters data)
