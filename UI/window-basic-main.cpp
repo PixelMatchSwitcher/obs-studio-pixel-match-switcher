@@ -2902,6 +2902,18 @@ void OBSBasic::ClearContextBar()
 	}
 }
 
+static bool is_network_media_source(obs_source_t *source, const char *id)
+{
+	if (strcmp(id, "ffmpeg_source") != 0)
+		return false;
+
+	obs_data_t *s = obs_source_get_settings(source);
+	bool is_local_file = obs_data_get_bool(s, "is_local_file");
+	obs_data_release(s);
+
+	return !is_local_file;
+}
+
 void OBSBasic::UpdateContextBar()
 {
 	OBSSceneItem item = GetCurrentSceneItem();
@@ -2914,14 +2926,15 @@ void OBSBasic::UpdateContextBar()
 		uint32_t flags = obs_source_get_output_flags(source);
 
 		if (flags & OBS_SOURCE_CONTROLLABLE_MEDIA) {
-			MediaControls *mediaControls =
-				new MediaControls(ui->emptySpace);
-			mediaControls->SetSource(source);
+			if (!is_network_media_source(source, id)) {
+				MediaControls *mediaControls =
+					new MediaControls(ui->emptySpace);
+				mediaControls->SetSource(source);
 
-			ui->emptySpace->layout()->addWidget(mediaControls);
-		}
-
-		if (strcmp(id, "browser_source") == 0) {
+				ui->emptySpace->layout()->addWidget(
+					mediaControls);
+			}
+		} else if (strcmp(id, "browser_source") == 0) {
 			BrowserToolbar *c =
 				new BrowserToolbar(ui->emptySpace, source);
 			ui->emptySpace->layout()->addWidget(c);
@@ -5319,9 +5332,9 @@ void OBSBasic::on_actionViewCurrentLog_triggered()
 	if (!logView->isVisible()) {
 		logView->setVisible(true);
 	} else {
-		logView->setWindowState(logView->windowState() &
-						~Qt::WindowMinimized |
-					Qt::WindowActive);
+		logView->setWindowState(
+			(logView->windowState() & ~Qt::WindowMinimized) |
+			Qt::WindowActive);
 		logView->activateWindow();
 		logView->raise();
 	}
@@ -5576,7 +5589,8 @@ inline void OBSBasic::OnDeactivate()
 		if (trayIcon && trayIcon->isVisible())
 			trayIcon->setIcon(QIcon::fromTheme(
 				"obs-tray", QIcon(":/res/images/obs.png")));
-	} else if (trayIcon && trayIcon->isVisible()) {
+	} else if (outputHandler->Active() && trayIcon &&
+		   trayIcon->isVisible()) {
 		if (os_atomic_load_bool(&recording_paused))
 			trayIcon->setIcon(QIcon(":/res/images/obs_paused.png"));
 		else
@@ -5833,17 +5847,16 @@ void OBSBasic::AutoRemux()
 	input += remuxFilename.c_str();
 
 	QFileInfo fi(remuxFilename.c_str());
+	QString suffix = fi.suffix();
 
 	/* do not remux if lossless */
-	if (fi.suffix().compare("avi", Qt::CaseInsensitive) == 0) {
+	if (suffix.compare("avi", Qt::CaseInsensitive) == 0) {
 		return;
 	}
 
-	QString output;
-	output += path;
-	output += "/";
-	output += fi.completeBaseName();
-	output += ".mp4";
+	QString output = input;
+	output.resize(output.size() - suffix.size());
+	output += "mp4";
 
 	OBSRemux *remux = new OBSRemux(path, this, true);
 	remux->show();
