@@ -25,9 +25,6 @@
 #xcode
 *.xcodeproj/
 
-#kdevelop
-*.kdev4
-
 #clion
 .idea/
 cmake-build-debug/
