@@ -21,8 +21,6 @@
 #include <graphics/vec3.h>
 #include <graphics/matrix3.h>
 #include <graphics/matrix4.h>
-#include <system_error>
-#include <fstream>
 
 void gs_vertex_shader::GetBuffersExpected(
 	const vector<D3D11_INPUT_ELEMENT_DESC> &inputs)
@@ -100,13 +98,6 @@ gs_pixel_shader::gs_pixel_shader(gs_device_t *device, const char *file,
 	processor.BuildSamplers(samplers);
 	BuildConstantBuffer();
 	BuildUavBuffer();
-
-	#if 1
-	std::ofstream dump("C:/Users/admin/Documents/dump.txt", std::ios_base::trunc);
-	dump << outputString.c_str();
-	dump.flush();
-	dump.close();
-	#endif
 
 	Compile(outputString.c_str(), file, "ps_5_0", shaderBlob.Assign());
 
