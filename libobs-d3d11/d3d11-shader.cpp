@@ -162,8 +162,8 @@ void gs_shader::BuildConstantBuffer()
 			break;
 		case GS_SHADER_PARAM_TEXTURE:
 		case GS_SHADER_PARAM_STRING:
-		case GS_SHADER_PARAM_UNKNOWN:
 		case GS_SHADER_PARAM_ATOMIC_UINT:
+		case GS_SHADER_PARAM_UNKNOWN:
 			continue;
 		}
 
@@ -208,8 +208,7 @@ void gs_shader::BuildUavBuffer()
 	size_t uintSz = sizeof(unsigned int);
 	for (size_t i = 0; i < params.size(); i++) {
 		gs_shader_param &param = params[i];
-		if (param.type == GS_SHADER_PARAM_ATOMIC_UINT)
-		{
+		if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
 			unsigned int binding = param.layoutBinding;
 			param.pos = binding * uintSz;
 			uavSize = max(uavSize, param.pos + uintSz);
@@ -333,10 +332,7 @@ inline void gs_shader::UpdateParam(
 
 		uavData.insert(uavData.end(), param.curValue.begin(),
 			       param.curValue.end());
-		//if (param.changed) {
 		uploadUav = true;
-		//param.changed = false;
-		//}
 	} else {
 		if (!param.curValue.size())
 			throw "Not all shader parameters were set";
@@ -371,7 +367,7 @@ void gs_shader::UploadParams()
 
 	for (size_t i = 0; i < params.size(); i++)
 		UpdateParam(constData, uavData, params[i],
-		uploadConst, uploadUav);
+			    uploadConst, uploadUav);
 
 	if (constData.size() != constantSize)
 		throw "Invalid constant data size given to shader";

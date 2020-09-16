@@ -42,11 +42,11 @@ enum shader_var_type {
 	SHADER_VAR_INOUT,
 	SHADER_VAR_OUT,
 	SHADER_VAR_UNIFORM,
-	SHADER_VAR_CONST,
+	SHADER_VAR_CONST
 };
 
 struct shader_var {
-	char *type ;
+	char *type;
 	char *name;
 	char *mapping;
 	enum shader_var_type var_type;

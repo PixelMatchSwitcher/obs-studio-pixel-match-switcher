@@ -42,7 +42,7 @@ enum effect_section {
 	EFFECT_TECHNIQUE,
 	EFFECT_SAMPLER,
 	EFFECT_PASS,
-	EFFECT_ANNOTATION,
+	EFFECT_ANNOTATION
 };
 
 /* ------------------------------------------------------------------------- */

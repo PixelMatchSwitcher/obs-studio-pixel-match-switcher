@@ -276,7 +276,6 @@ static bool gl_shader_init(struct gs_shader *shader,
 
 	if (success)
 		success = gl_add_params(shader, glsp);
-
 	/* Only vertex shaders actually require input attributes */
 	if (success && shader->type == GS_SHADER_VERTEX)
 		success = gl_process_attribs(shader, glsp);
@@ -766,15 +765,20 @@ static bool assign_program_param(struct gs_program *program,
 {
 	struct program_param info;
 
-	if (param->type != GS_SHADER_PARAM_ATOMIC_UINT) {
+	if (param->type == GS_SHADER_PARAM_ATOMIC_UINT) {
+		// uses buffer API instead
+	} else {
 		info.obj = glGetUniformLocation(program->obj, param->name);
 		if (!gl_success("glGetUniformLocation"))
 			return false;
+
+		if (info.obj == -1) {
+			return true;
+		}
 	}
 
 	info.param = param;
 	da_push_back(program->params, &info);
-
 	return true;
 }
 
@@ -835,14 +839,12 @@ static inline bool assign_program_results(struct gs_program *program)
 struct gs_program *gs_program_create(struct gs_device *device)
 {
 	struct gs_program *program = bzalloc(sizeof(*program));
-	struct gs_shader* vertex_shader = device->cur_vertex_shader;
-	struct gs_shader *pixel_shader = device->cur_pixel_shader;
 
 	int linked = false;
 
 	program->device = device;
-	program->vertex_shader = vertex_shader;
-	program->pixel_shader = pixel_shader;
+	program->vertex_shader = device->cur_vertex_shader;
+	program->pixel_shader = device->cur_pixel_shader;
 
 	program->obj = glCreateProgram();
 	if (!gl_success("glCreateProgram"))

@@ -67,7 +67,7 @@ static inline void ep_var_free(struct ep_var *epv)
 /* effect parser param data */
 
 struct ep_param {
-	char *type, *name, *layout_qualifiers;
+	char *type, *name;
 	DARRAY(uint8_t) default_val;
 	DARRAY(char *) properties;
 	struct gs_effect_param *param;
@@ -81,7 +81,6 @@ extern void ep_param_writevar(struct dstr *dst, struct darray *use_params);
 
 static inline void ep_param_init(struct ep_param *epp,
 				 char *type, char *name,
-				 char *layout_qualifiers,
 				 bool is_property, bool is_const,
 				 bool is_uniform, bool is_result,
 				 unsigned int layout_binding,
@@ -89,7 +88,6 @@ static inline void ep_param_init(struct ep_param *epp,
 {
 	epp->type = type;
 	epp->name = name;
-	epp->layout_qualifiers = layout_qualifiers;
 	epp->is_property = is_property;
 	epp->is_const = is_const;
 	epp->is_uniform = is_uniform;

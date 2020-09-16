@@ -243,8 +243,6 @@ void ShaderProcessor::BuildString(string &outputString)
 			tempOutput << "SamplerState";
 		else if (strref_cmp(&token->str, "VERTEXID") == 0)
 			tempOutput << "SV_VertexID";
-		//else if (strref_cmp(&token->str, "atomic_uint") == 0)
-		//	uavOutput << "RWBuffer<uint>";
 		else if (strref_cmp(&token->str, "layout") == 0)
 			ReplaceLayout(token, tempOutput, uavMapping);
 		else if (strref_cmp(&token->str, "atomicCounterIncrement") == 0)
@@ -289,10 +287,6 @@ void ShaderProcessor::ReplaceLayout(cf_token* &token, stringstream &out,
 
 		name.resize(token->str.len);
 		memcpy(name.data(), token->str.array, token->str.len);
-
-		//out << "RWByteAddressBuffer " << name
-		//out << "RWBuffer<uint> " << name
-		//    << ": register(u" << (binding+1) << ");\n";
 		map[name] = binding;
 
 		SeekUntil(token, ";");
@@ -346,7 +340,7 @@ void ShaderProcessor::Process(const char *shader_string, const char *file)
 	}
 
 	if (!success)
-	    throw "Failed to parse shader";
+		throw "Failed to parse shader";
 }
 
 

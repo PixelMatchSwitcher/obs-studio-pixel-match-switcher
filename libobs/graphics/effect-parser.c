@@ -408,7 +408,7 @@ static int ep_parse_annotations(struct effect_parser *ep,
 		bool do_break = false;
 		struct ep_param var;
 
-		ep_param_init(&var, bstrdup(""), bstrdup(""), bstrdup(""),
+		ep_param_init(&var, bstrdup(""), bstrdup(""),
 			      false, false, false, false, 0, 0);
 
 		switch (ep_parse_param_annotation_var(ep, &var)) {
@@ -1188,14 +1188,14 @@ static inline bool ep_parse_param_assign(struct effect_parser *ep,
 } */
 
 static void ep_parse_param(struct effect_parser *ep,
-			   char *type, char *name, char *layout_qualifiers,
+			   char *type, char *name,
 			   bool is_property, bool is_const,
 			   bool is_uniform, bool is_result,
 			   unsigned int layout_binding,
 			   unsigned int layout_offset)
 {
 	struct ep_param param;
-	ep_param_init(&param, type, name, layout_qualifiers,
+	ep_param_init(&param, type, name,
 		      is_property, is_const, is_uniform, is_result,
 		      layout_binding, layout_offset);
 
@@ -1222,9 +1222,8 @@ error:
 	ep_param_free(&param);
 }
 
-static bool ep_get_var_specifiers(struct effect_parser *ep,
-				  bool *is_property, bool *is_const,
-				  bool *is_uniform)
+static bool ep_get_var_specifiers(struct effect_parser *ep, bool *is_property,
+				  bool *is_const, bool *is_uniform)
 {
 	while (true) {
 		int code;
@@ -1266,7 +1265,7 @@ static void ep_parse_other(struct effect_parser *ep)
 {
 	bool is_property = false, is_const = false;
 	bool is_uniform = false, is_result = false;
-	char *type = NULL, *name = NULL, *layout_qualifiers = NULL;
+	char *type = NULL, *name = NULL;
 	unsigned int layout_binding = 0, layout_offset = 0;
 
 	if (cf_token_is(&ep->cfp, "layout"))
@@ -1293,7 +1292,7 @@ static void ep_parse_other(struct effect_parser *ep)
 		ep_parse_function(ep, type, name);
 		return;
 	} else {
-		ep_parse_param(ep, type, name, layout_qualifiers,
+		ep_parse_param(ep, type, name,
 			       is_property, is_const, is_uniform, is_result,
 			       layout_binding, layout_offset);
 		return;
@@ -1531,17 +1530,22 @@ bool ep_parse(struct effect_parser *ep, gs_effect_t *effect,
 		    is_whitespace(*ep->cfp.cur_token->str.array)) {
 			/* do nothing */
 			ep->cfp.cur_token++;
+
 		} else if (cf_token_is(&ep->cfp, "struct")) {
 			ep_parse_struct(ep);
+
 		} else if (cf_token_is(&ep->cfp, "technique")) {
 			ep_parse_technique(ep);
+
 		} else if (cf_token_is(&ep->cfp, "sampler_state")) {
 			ep_parse_sampler_state(ep);
+
 		} else if (cf_token_is(&ep->cfp, "{")) {
 			/* add error and pass braces */
 			cf_adderror(&ep->cfp, "Unexpected code segment",
 				    LEX_ERROR, NULL, NULL, NULL);
 			cf_pass_pair(&ep->cfp, '{', '}');
+
 		} else {
 			/* parameters and functions */
 			ep_parse_other(ep);
@@ -2009,8 +2013,8 @@ static bool ep_compile_pass_shaderparams(struct effect_parser *ep,
 }
 
 bool ep_compile_result(struct gs_effect_result *result,
-			const char *result_name,
-			struct effect_parser *ep)
+		       const char *result_name,
+		       struct effect_parser *ep)
 {
 	struct ep_param *param_in = NULL, *param_temp;
 	size_t i;
@@ -2237,14 +2241,14 @@ static bool ep_compile(struct effect_parser *ep)
 	for (i = 0; i < ep->params.num; i++)
 		ep_compile_param(ep, i);
 
-
 #if defined(_DEBUG) && defined(_DEBUG_SHADERS)
 	blog(LOG_DEBUG, "Shader has %lld techniques:", ep->techniques.num);
 #endif
 
-	for (i = 0; i < ep->techniques.num; i++)
+	for (i = 0; i < ep->techniques.num; i++) {
 		if (!ep_compile_technique(ep, i))
 			success = false;
+	}
 
 	return success;
 }
