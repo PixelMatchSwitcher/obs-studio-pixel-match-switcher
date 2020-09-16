@@ -860,11 +860,13 @@ uint32_t obs_get_source_output_flags(const char *id)
 
 static void obs_source_deferred_update(obs_source_t *source)
 {
-	if (source->context.data && source->info.update)
+	if (source->context.data && source->info.update) {
+		long count = os_atomic_load_long(&source->defer_update_count);
 		source->info.update(source->context.data,
 				    source->context.settings);
-
-	source->defer_update = false;
+		os_atomic_compare_swap_long(&source->defer_update_count, count,
+					    0);
+	}
 }
 
 void obs_source_update(obs_source_t *source, obs_data_t *settings)
@@ -876,7 +878,7 @@ void obs_source_update(obs_source_t *source, obs_data_t *settings)
 		obs_data_apply(source->context.settings, settings);
 
 	if (source->info.output_flags & OBS_SOURCE_VIDEO) {
-		source->defer_update = true;
+		os_atomic_inc_long(&source->defer_update_count);
 	} else if (source->context.data && source->info.update) {
 		source->info.update(source->context.data,
 				    source->context.settings);
@@ -1101,7 +1103,7 @@ void obs_source_video_tick(obs_source_t *source, float seconds)
 	if ((source->info.output_flags & OBS_SOURCE_ASYNC) != 0)
 		async_tick(source);
 
-	if (source->defer_update)
+	if (os_atomic_load_long(&source->defer_update_count) > 0)
 		obs_source_deferred_update(source);
 
 	/* reset the filter render texture information once every frame */
@@ -3832,7 +3834,7 @@ static void enum_source_full_tree_callback(obs_source_t *parent,
 			child, enum_source_full_tree_callback, param);
 	if (child->info.enum_all_sources) {
 		if (child->context.data) {
-			child->info.enum_active_sources(
+			child->info.enum_all_sources(
 				child->context.data,
 				enum_source_full_tree_callback, data);
 		}
@@ -4915,7 +4917,7 @@ enum obs_icon_type obs_source_get_icon_type(const char *id)
 
 void obs_source_media_play_pause(obs_source_t *source, bool pause)
 {
-	if (!obs_source_valid(source, "obs_source_media_play_pause"))
+	if (!data_valid(source, "obs_source_media_play_pause"))
 		return;
 
 	if (!source->info.media_play_pause)
@@ -4931,7 +4933,7 @@ void obs_source_media_play_pause(obs_source_t *source, bool pause)
 
 void obs_source_media_restart(obs_source_t *source)
 {
-	if (!obs_source_valid(source, "obs_source_media_restart"))
+	if (!data_valid(source, "obs_source_media_restart"))
 		return;
 
 	if (!source->info.media_restart)
@@ -4944,7 +4946,7 @@ void obs_source_media_restart(obs_source_t *source)
 
 void obs_source_media_stop(obs_source_t *source)
 {
-	if (!obs_source_valid(source, "obs_source_media_stop"))
+	if (!data_valid(source, "obs_source_media_stop"))
 		return;
 
 	if (!source->info.media_stop)
@@ -4957,7 +4959,7 @@ void obs_source_media_stop(obs_source_t *source)
 
 void obs_source_media_next(obs_source_t *source)
 {
-	if (!obs_source_valid(source, "obs_source_media_next"))
+	if (!data_valid(source, "obs_source_media_next"))
 		return;
 
 	if (!source->info.media_next)
@@ -4970,7 +4972,7 @@ void obs_source_media_next(obs_source_t *source)
 
 void obs_source_media_previous(obs_source_t *source)
 {
-	if (!obs_source_valid(source, "obs_source_media_previous"))
+	if (!data_valid(source, "obs_source_media_previous"))
 		return;
 
 	if (!source->info.media_previous)
@@ -4983,7 +4985,7 @@ void obs_source_media_previous(obs_source_t *source)
 
 int64_t obs_source_media_get_duration(obs_source_t *source)
 {
-	if (!obs_source_valid(source, "obs_source_media_get_duration"))
+	if (!data_valid(source, "obs_source_media_get_duration"))
 		return 0;
 
 	if (source->info.media_get_duration)
@@ -4994,7 +4996,7 @@ int64_t obs_source_media_get_duration(obs_source_t *source)
 
 int64_t obs_source_media_get_time(obs_source_t *source)
 {
-	if (!obs_source_valid(source, "obs_source_media_get_time"))
+	if (!data_valid(source, "obs_source_media_get_time"))
 		return 0;
 
 	if (source->info.media_get_time)
@@ -5005,7 +5007,7 @@ int64_t obs_source_media_get_time(obs_source_t *source)
 
 void obs_source_media_set_time(obs_source_t *source, int64_t ms)
 {
-	if (!obs_source_valid(source, "obs_source_media_set_time"))
+	if (!data_valid(source, "obs_source_media_set_time"))
 		return;
 
 	if (source->info.media_set_time)
@@ -5014,7 +5016,7 @@ void obs_source_media_set_time(obs_source_t *source, int64_t ms)
 
 enum obs_media_state obs_source_media_get_state(obs_source_t *source)
 {
-	if (!obs_source_valid(source, "obs_source_media_get_state"))
+	if (!data_valid(source, "obs_source_media_get_state"))
 		return OBS_MEDIA_STATE_NONE;
 
 	if (source->info.media_get_state)

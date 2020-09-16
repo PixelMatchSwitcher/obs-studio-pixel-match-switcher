@@ -163,6 +163,8 @@ class OBSBasic : public OBSMainWindow {
 	friend class ReplayBufferButton;
 	friend class ExtraBrowsersModel;
 	friend class ExtraBrowsersDelegate;
+	friend class DeviceCaptureToolbar;
+	friend class DeviceToolbarPropertiesThread;
 	friend struct BasicOutputHandler;
 	friend struct OBSStudioAPI;
 
@@ -198,6 +200,7 @@ private:
 	bool copyVisible = true;
 
 	bool closing = false;
+	QScopedPointer<QThread> devicePropertiesThread;
 	QScopedPointer<QThread> whatsNewInitThread;
 	QScopedPointer<QThread> updateCheckThread;
 	QScopedPointer<QThread> introCheckThread;
@@ -211,7 +214,7 @@ private:
 	QPointer<QDockWidget> statsDock;
 	QPointer<OBSAbout> about;
 
-	OBSLogViewer *logView;
+	OBSLogViewer *logView = nullptr;
 
 	QPointer<QTimer> cpuUsageTimer;
 	QPointer<QTimer> diskFullTimer;
@@ -232,7 +235,6 @@ private:
 	gs_vertbuffer_t *circle = nullptr;
 
 	bool sceneChanging = false;
-	bool ignoreSelectionUpdate = false;
 
 	int previewX = 0, previewY = 0;
 	int previewCX = 0, previewCY = 0;
@@ -280,6 +282,8 @@ private:
 	QPointer<QMenu> deinterlaceMenu;
 	QPointer<QMenu> perSceneTransitionMenu;
 	QPointer<QObject> shortcutFilter;
+	QPointer<QAction> renameScene;
+	QPointer<QAction> renameSource;
 
 	QPointer<QWidget> programWidget;
 	QPointer<QVBoxLayout> programLayout;
@@ -348,6 +352,7 @@ private:
 
 	void CloseDialogs();
 	void ClearSceneData();
+	void ClearProjectors();
 
 	void Nudge(int dist, MoveDir dir);
 
@@ -380,7 +385,8 @@ private:
 	QModelIndexList GetAllSelectedSourceItems();
 
 	obs_hotkey_pair_id streamingHotkeys, recordingHotkeys, pauseHotkeys,
-		replayBufHotkeys, vcamHotkeys, togglePreviewHotkeys;
+		replayBufHotkeys, vcamHotkeys, togglePreviewHotkeys,
+		contextBarHotkeys;
 	obs_hotkey_id forceStreamingStopHotkey;
 
 	void InitDefaultTransitions();
@@ -391,6 +397,7 @@ private:
 	void LoadTransitions(obs_data_array_t *transitions);
 
 	obs_source_t *fadeTransition;
+	obs_source_t *cutTransition;
 
 	void CreateProgramDisplay();
 	void CreateProgramOptions();
@@ -529,6 +536,7 @@ private:
 
 	void UpdateProjectorHideCursor();
 	void UpdateProjectorAlwaysOnTop(bool top);
+	void ResetProjectors();
 
 	QPointer<QObject> screenshotData;
 
@@ -586,6 +594,8 @@ public slots:
 
 	void UpdatePatronJson(const QString &text, const QString &error);
 
+	void ShowContextBar();
+	void HideContextBar();
 	void PauseRecording();
 	void UnpauseRecording();
 
@@ -594,8 +604,6 @@ private slots:
 	void AddScene(OBSSource source);
 	void RemoveScene(OBSSource source);
 	void RenameSources(OBSSource source, QString newName, QString prevName);
-
-	void SelectSceneItem(OBSScene scene, OBSSceneItem item, bool select);
 
 	void ActivateAudioSource(OBSSource source);
 	void DeactivateAudioSource(OBSSource source);
@@ -662,8 +670,7 @@ private slots:
 	void CheckDiskSpaceRemaining();
 	void OpenSavedProjector(SavedProjectorInfo *info);
 
-	void ScenesReordered(const QModelIndex &parent, int start, int end,
-			     const QModelIndex &destination, int row);
+	void ScenesReordered();
 
 	void ResetStatsHotkey();
 
@@ -693,8 +700,6 @@ private:
 	static void SceneReordered(void *data, calldata_t *params);
 	static void SceneRefreshed(void *data, calldata_t *params);
 	static void SceneItemAdded(void *data, calldata_t *params);
-	static void SceneItemSelected(void *data, calldata_t *params);
-	static void SceneItemDeselected(void *data, calldata_t *params);
 	static void SourceCreated(void *data, calldata_t *params);
 	static void SourceRemoved(void *data, calldata_t *params);
 	static void SourceActivated(void *data, calldata_t *params);
@@ -933,6 +938,7 @@ private slots:
 	void on_actionAlwaysOnTop_triggered();
 
 	void on_toggleListboxToolbars_toggled(bool visible);
+	void on_toggleContextBar_toggled(bool visible);
 	void on_toggleStatusBar_toggled(bool visible);
 	void on_toggleSourceIcons_toggled(bool visible);
 
@@ -942,6 +948,10 @@ private slots:
 	void on_transitionDuration_valueChanged(int value);
 
 	void on_modeSwitch_clicked();
+
+	// Source Context Buttons
+	void on_sourcePropertiesButton_clicked();
+	void on_sourceFiltersButton_clicked();
 
 	void on_autoConfigure_triggered();
 	void on_stats_triggered();
@@ -1003,6 +1013,9 @@ public slots:
 	bool StreamingActive();
 	bool RecordingActive();
 	bool ReplayBufferActive();
+
+	void ClearContextBar();
+	void UpdateContextBar();
 
 public:
 	explicit OBSBasic(QWidget *parent = 0);
