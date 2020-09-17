@@ -718,16 +718,10 @@ static bool ep_parse_layout(struct effect_parser *ep,
 	if (!cf_next_valid_token(&ep->cfp))
 		goto error;
 
-	return true; // SUCCESS
+	return true;
 
 error:
-#if 0
-	if (*layout) {
-		bfree(*layout);
-	}
-	layout = NULL;
-#endif
-	return true;
+	return false;
 }
 
 static inline int ep_check_for_keyword(struct effect_parser *ep,
