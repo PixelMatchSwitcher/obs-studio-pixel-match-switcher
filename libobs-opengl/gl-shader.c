@@ -496,12 +496,6 @@ void gs_shader_set_atomic_uint(gs_sparam_t *param, unsigned int val)
 	da_copy_array(param->cur_value, &val, sizeof(val));
 }
 
-unsigned int gs_shader_get_atomic_uint(gs_sparam_t *param)
-{
-	unsigned int *val = (unsigned int*)param->cur_value.da.array;
-	return *val;
-}
-
 static inline bool validate_param(struct program_param *pp,
 				  size_t expected_size)
 {

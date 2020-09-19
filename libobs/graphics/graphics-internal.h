@@ -263,8 +263,6 @@ struct gs_exports {
 	void (*gs_shader_set_next_sampler)(gs_sparam_t *param,
 					   gs_samplerstate_t *sampler);
 	void (*gs_shader_get_result)(gs_sresult_t *result, struct darray *dst);
-	unsigned int (*gs_shader_get_atomic_uint)(gs_sparam_t *param);
-
 
 	bool (*device_nv12_available)(gs_device_t *device);
 

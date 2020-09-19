@@ -2233,16 +2233,6 @@ void gs_shader_set_atomic_uint(gs_sparam_t *param, unsigned int val)
 	graphics->exports.gs_shader_set_atomic_uint(param, val);
 }
 
-unsigned int gs_shader_get_atomic_uint(gs_sparam_t *param)
-{
-	graphics_t *graphics = thread_graphics;
-
-	if (!gs_valid_p("gs_shader_get_atomic_uint", param))
-		return (unsigned int)-1;
-
-	return graphics->exports.gs_shader_get_atomic_uint(param);
-}
-
 void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 {
 	graphics_t *graphics = thread_graphics;

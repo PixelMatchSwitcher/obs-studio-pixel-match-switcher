@@ -577,12 +577,6 @@ void gs_shader_set_atomic_uint(gs_sparam_t *param, unsigned int val)
 	shader_setval_inline(param, &val, sizeof(unsigned int));
 }
 
-unsigned int gs_shader_get_atomic_uint(gs_sparam_t *param)
-{
-	unsigned int *val = (unsigned int*)(param->curValue.data());
-	return *val;
-}
-
 void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 {
 	shader_setval_inline(param, val, size);

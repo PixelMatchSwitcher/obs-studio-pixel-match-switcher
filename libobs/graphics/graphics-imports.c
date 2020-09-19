@@ -188,7 +188,6 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(gs_shader_set_default);
 	GRAPHICS_IMPORT(gs_shader_set_next_sampler);
 	GRAPHICS_IMPORT(gs_shader_get_result);
-	GRAPHICS_IMPORT(gs_shader_get_atomic_uint);
 
 	GRAPHICS_IMPORT_OPTIONAL(device_nv12_available);
 
