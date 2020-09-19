@@ -993,7 +993,16 @@ void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 
 void  gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
 {
-	darray_copy(1, dst, &result->cur_value.da);
+	size_t expected_size = 0;
+	if (result->param->type == GS_SHADER_PARAM_ATOMIC_UINT) {
+		expected_size = 1;
+
+	} else {
+		blog(LOG_ERROR, "gs_shader_get_result (GL): "
+				"unsupported result type");
+		return;
+	}
+	darray_copy(expected_size, dst, &result->cur_value.da);
 }
 
 void gs_shader_set_default(gs_sparam_t *param)

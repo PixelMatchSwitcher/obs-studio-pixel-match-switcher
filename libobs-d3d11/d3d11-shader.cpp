@@ -592,10 +592,18 @@ void  gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
 {
 	const auto &val = result->curValue;
 	if (val.empty()) {
-	    darray_free(dst);
+		darray_free(dst);
 	} else {
-	    darray_resize(1, dst, val.size());
-	    memcpy(dst->array, val.data(), val.size());
+		size_t expected_size = 0;
+		if (result->param->type == GS_SHADER_PARAM_ATOMIC_UINT) {
+			expected_size = 1;
+		} else {
+			blog(LOG_ERROR, "gs_shader_get_result (GL): "
+					"unsupported result type");
+			return;
+		}
+		darray_resize(expected_size, dst, val.size());
+		memcpy(dst->array, val.data(), val.size());
 	}
 }
 
