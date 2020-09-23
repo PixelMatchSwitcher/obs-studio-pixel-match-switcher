@@ -990,7 +990,6 @@ void  gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
 	size_t expected_size = 0;
 	if (result->param->type == GS_SHADER_PARAM_ATOMIC_UINT) {
 		expected_size = 1;
-
 	} else {
 		blog(LOG_ERROR, "gs_shader_get_result (GL): "
 				"unsupported result type");
