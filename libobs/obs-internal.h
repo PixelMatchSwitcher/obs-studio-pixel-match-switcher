@@ -212,7 +212,6 @@ struct obs_display {
 
 	struct obs_display *next;
 	struct obs_display **prev_next;
-	struct gs_init_data init_data;
 };
 
 extern bool obs_display_init(struct obs_display *display,

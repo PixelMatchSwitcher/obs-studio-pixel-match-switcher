@@ -47,8 +47,6 @@ bool obs_display_init(struct obs_display *display,
 	}
 
 	display->enabled = true;
-	display->init_data = *graphics_data;
-	
 	return true;
 }
 
@@ -159,16 +157,10 @@ static inline void render_display_begin(struct obs_display *display,
 {
 	struct vec4 clear_color;
 
-	if (size_changed) {
-		//gs_resize(cx, cy);
-		gs_swapchain_destroy(display->swap);
-		display->init_data.cx = cx;
-		display->init_data.cy = cy;
-		display->swap = gs_swapchain_create(&display->init_data);
-	}
-
 	gs_load_swapchain(display->swap);
 
+	if (size_changed)
+		gs_resize(cx, cy);
 
 	gs_begin_scene();
 
