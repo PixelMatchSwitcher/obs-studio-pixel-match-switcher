@@ -218,8 +218,6 @@ void ShaderProcessor::BuildSamplers(vector<unique_ptr<ShaderSampler>> &samplers)
 		AddSampler(device, parser.samplers.array[i], samplers);
 }
 
-#include <fstream>
-
 void ShaderProcessor::BuildString(string &outputString)
 {
 	stringstream tempOutput, finalOutput;
@@ -256,9 +254,6 @@ void ShaderProcessor::BuildString(string &outputString)
 	finalOutput << tempOutput.str();
 
 	outputString = finalOutput.str();
-
-	ofstream dump("C:\\Users\\admin\\Documents\\dump.txt");
-	dump << outputString;
 }
 
 bool ShaderProcessor::SeekUntil(cf_token *&token, const char *str)
