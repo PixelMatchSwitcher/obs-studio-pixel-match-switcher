@@ -327,48 +327,6 @@ error:
 	shader_struct_free(&ss);
 }
 
-static bool sp_parse_layout(struct shader_parser *sp,
-			    unsigned int *binding, unsigned int *offset)
-{
-	if (cf_next_token_should_be(&sp->cfp, "(", ";", NULL) != PARSE_SUCCESS)
-		goto error;
-	if (cf_next_token_should_be(&sp->cfp, "binding", ";", NULL) != PARSE_SUCCESS)
-		goto error;
-	if (cf_next_token_should_be(&sp->cfp, "=", ";", NULL) != PARSE_SUCCESS)
-		goto error;
-	if (!cf_next_valid_token(&sp->cfp))
-		goto error;
-	*binding =
-		 (unsigned int)strtol(sp->cfp.cur_token->str.array, NULL, 10);
-	if (!cf_next_valid_token(&sp->cfp))
-		goto error;
-	if(cf_token_is(&sp->cfp, ")")) {
-		// TODO: automated offset determination
-		if (!cf_next_valid_token(&sp->cfp))
-			goto error;
-		return true;
-	}
-	if (!cf_token_is(&sp->cfp, ","))
-		goto error;
-	if (cf_next_token_should_be(&sp->cfp, "offset", ";", NULL) != PARSE_SUCCESS)
-		goto error;
-	if (cf_next_token_should_be(&sp->cfp, "=", ";", NULL) != PARSE_SUCCESS)
-		goto error;
-	if (!cf_next_valid_token(&sp->cfp))
-		goto error;
-	*offset =
-		 (unsigned int)strtol(sp->cfp.cur_token->str.array, NULL, 10);
-	if (cf_next_token_should_be(&sp->cfp, ")", NULL, NULL) != PARSE_SUCCESS)
-		goto error;
-	if (!cf_next_valid_token(&sp->cfp))
-		goto error;
-
-	return true; // SUCCESS
-
-error:
-	return false;
-}
-
 static inline int sp_check_for_keyword(struct shader_parser *sp,
 				       const char *keyword, bool *val)
 {
