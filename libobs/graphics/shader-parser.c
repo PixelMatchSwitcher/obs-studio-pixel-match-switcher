@@ -672,13 +672,12 @@ static inline bool sp_parse_param_assign(struct shader_parser *sp,
 }
 
 static void sp_parse_param(struct shader_parser *sp, char *type, char *name,
-			   bool is_const, bool is_uniform, bool is_result,
-			   unsigned int lo_binding, unsigned int lo_offset)
+			   bool is_const, bool is_uniform, bool is_result)
 {
 	struct shader_var param;
 	shader_var_init_param(&param, type, name,
 			      is_uniform, is_const, is_result,
-			      lo_binding, lo_offset);
+			      &(sp->atomic_counter_next_index));
 
 	if (cf_token_is(&sp->cfp, ";"))
 		goto complete;
@@ -733,11 +732,6 @@ static void sp_parse_other(struct shader_parser *sp)
 {
 	bool is_const = false, is_uniform = false, is_result = false;
 	char *type = NULL, *name = NULL;
-	unsigned int lo_binding = 0, lo_offset = 0;
-
-	if (cf_token_is(&sp->cfp, "layout"))
-		if (!sp_parse_layout(sp, &lo_binding, &lo_offset))
-			goto error;
 
 	if (!sp_get_var_specifiers(sp, &is_const, &is_uniform))
 		goto error;
@@ -760,8 +754,7 @@ static void sp_parse_other(struct shader_parser *sp)
 		return;
 	} else {
 		sp_parse_param(sp, type, name,
-			       is_const, is_uniform, is_result,
-			       lo_binding, lo_offset);
+			       is_const, is_uniform, is_result);
 		return;
 	}
 

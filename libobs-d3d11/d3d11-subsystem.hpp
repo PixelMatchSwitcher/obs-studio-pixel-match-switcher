@@ -603,8 +603,7 @@ struct gs_shader_param {
 	uint32_t textureID;
 	struct gs_sampler_state *nextSampler = nullptr;
 
-	unsigned int layoutBinding;
-	unsigned int layoutOffset;
+	int atomicCounterIndex;
 	bool isResult;
 
 	int arrayCount;

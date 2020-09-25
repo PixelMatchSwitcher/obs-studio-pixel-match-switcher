@@ -101,8 +101,8 @@ static bool gl_add_param(struct gs_shader *shader, struct shader_var *var,
 
 	param.is_result = var->is_result;
 	if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
-		param.layout_binding = var->layout_binding;
-		param.layout_offset = var->layout_offset;
+		param.layout_binding = var->atomic_counter_index;
+		param.layout_offset = 0;
 	}
 
 	if (param.type == GS_SHADER_PARAM_TEXTURE) {

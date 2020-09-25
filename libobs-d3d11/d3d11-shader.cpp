@@ -209,8 +209,7 @@ void gs_shader::BuildUavBuffer()
 	for (size_t i = 0; i < params.size(); i++) {
 		gs_shader_param &param = params[i];
 		if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
-			unsigned int binding = param.layoutBinding;
-			param.pos = binding * uintSz;
+			param.pos = param.atomicCounterIndex * uintSz;
 			uavSize = max(uavSize, param.pos + uintSz);
 
 			gs_shader_result *result = gs_shader_get_result_by_name(

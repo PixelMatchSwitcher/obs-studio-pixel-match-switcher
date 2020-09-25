@@ -72,7 +72,6 @@ struct ep_param {
 	DARRAY(char *) properties;
 	struct gs_effect_param *param;
 	bool is_const, is_property, is_uniform, is_texture, is_result, written;
-	unsigned int layout_binding, layout_offset;
 	int writeorder, array_count;
 	DARRAY(struct ep_param) annotations;
 };
@@ -82,9 +81,7 @@ extern void ep_param_writevar(struct dstr *dst, struct darray *use_params);
 static inline void ep_param_init(struct ep_param *epp,
 				 char *type, char *name,
 				 bool is_property, bool is_const,
-				 bool is_uniform, bool is_result,
-				 unsigned int layout_binding,
-				 unsigned int layout_offset)
+				 bool is_uniform, bool is_result)
 {
 	epp->type = type;
 	epp->name = name;
@@ -92,8 +89,6 @@ static inline void ep_param_init(struct ep_param *epp,
 	epp->is_const = is_const;
 	epp->is_uniform = is_uniform;
 	epp->is_result = is_result;
-	epp->layout_binding = layout_binding;
-	epp->layout_offset = layout_offset;
 	epp->is_texture = (astrcmp_n(epp->type, "texture", 7) == 0);
 	epp->written = false;
 	epp->writeorder = false;

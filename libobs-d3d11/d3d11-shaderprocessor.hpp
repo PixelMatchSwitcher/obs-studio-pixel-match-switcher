@@ -20,7 +20,6 @@
 #include <graphics/shader-parser.h>
 
 #include <sstream>
-#include <unordered_map>
 
 struct ShaderParser : shader_parser {
 	inline ShaderParser() { shader_parser_init(this); }
@@ -41,10 +40,8 @@ public:
 
 	inline ShaderProcessor(gs_device_t *device) : device(device) {}
 protected:
-	void ReplaceLayout(cf_token *&token, std::stringstream &out,
-			   std::unordered_map<std::string, unsigned int> &map);
-	void ReplaceAtomicIncrement(cf_token *&token, std::stringstream &out,
-				    const std::unordered_map<std::string, unsigned int> &map);
+	void ReplaceAtomicIncrement(cf_token *&token, std::stringstream &out);
+	bool PeekAndSkipAtomicUint(cf_token *&token);
 
 	static bool SeekUntil(cf_token * &token, const char *str);
 	static bool SeekWhile(cf_token * &token, const char *str);

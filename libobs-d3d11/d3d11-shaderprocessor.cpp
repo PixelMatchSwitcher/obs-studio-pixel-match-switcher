@@ -155,8 +155,7 @@ gs_shader_param::gs_shader_param(shader_var &var, uint32_t &texCounter)
 	: name(var.name),
 	  type(get_shader_param_type(var.type)),
 	  textureID(texCounter),
-	  layoutBinding(var.layout_binding),
-	  layoutOffset(var.layout_offset),
+	  atomicCounterIndex(var.atomic_counter_index),
 	  isResult(var.is_result),
 	  arrayCount(var.array_count),
 	  changed(false)
@@ -219,10 +218,11 @@ void ShaderProcessor::BuildSamplers(vector<unique_ptr<ShaderSampler>> &samplers)
 		AddSampler(device, parser.samplers.array[i], samplers);
 }
 
+#include <fstream>
+
 void ShaderProcessor::BuildString(string &outputString)
 {
 	stringstream tempOutput, finalOutput;
-	unordered_map<string, unsigned int> uavMapping;
 
 	cf_token *token = cf_preprocessor_get_tokens(&parser.cfp.pp);
 	while (token->type != CFTOKEN_NONE) {
@@ -243,54 +243,22 @@ void ShaderProcessor::BuildString(string &outputString)
 			tempOutput << "SamplerState";
 		else if (strref_cmp(&token->str, "VERTEXID") == 0)
 			tempOutput << "SV_VertexID";
-		else if (strref_cmp(&token->str, "layout") == 0)
-			ReplaceLayout(token, tempOutput, uavMapping);
 		else if (strref_cmp(&token->str, "atomicCounterIncrement") == 0)
-			ReplaceAtomicIncrement(token, tempOutput, uavMapping);
-		else
+			ReplaceAtomicIncrement(token, tempOutput);
+		else if (!PeekAndSkipAtomicUint(token))
 			tempOutput.write(token->str.array, token->str.len);
 		token++;
 	}
 
 	finalOutput << "static const bool obs_glsl_compile = false;\n\n";
-	if (uavMapping.size())
+	if (parser.atomic_counter_next_index > 0)
 		finalOutput << "RWStructuredBuffer<uint> __uavBuffer : register(u1);\n\n";
 	finalOutput << tempOutput.str();
 
 	outputString = finalOutput.str();
-}
 
-void ShaderProcessor::ReplaceLayout(cf_token* &token, stringstream &out,
-	std::unordered_map<std::string, unsigned int> &map)
-{
-	cf_token *peek = token + 1;
-	if (!SeekUntil(peek, "(")) {
-		out << "layout"; // "false positive; could be a var name"
-	} else {
-		std::string temp, name;
-		unsigned int binding;
-		token = peek;
-
-		if (!SeekUntil(token, "binding")) return;
-		if (!SeekUntil(token, "=")) return;
-		token++;
-		if (!SeekWhile(token, " ")) return;
-
-		temp.resize(token->str.len);
-		memcpy(temp.data(), token->str.array, token->str.len);
-		binding = atoi(temp.data());
-
-		if (!SeekUntil(token, ")")) return;
-		if (!SeekUntil(token, "atomic_uint")) return;
-		token++;
-		if (!SeekWhile(token, " ")) return;
-
-		name.resize(token->str.len);
-		memcpy(name.data(), token->str.array, token->str.len);
-		map[name] = binding;
-
-		SeekUntil(token, ";");
-	}
+	ofstream dump("C:\\Users\\admin\\Documents\\dump.txt");
+	dump << outputString;
 }
 
 bool ShaderProcessor::SeekUntil(cf_token *&token, const char *str)
@@ -314,8 +282,7 @@ bool ShaderProcessor::SeekWhile(cf_token *&token, const char *str)
 }
 
 void ShaderProcessor::ReplaceAtomicIncrement(
-	cf_token *&token, stringstream &out,
-	const unordered_map<string, unsigned int> &mapping)
+	cf_token *&token, stringstream &out)
 {
 	SeekUntil(token, "(");
 	token++;
@@ -325,9 +292,38 @@ void ShaderProcessor::ReplaceAtomicIncrement(
 	name.resize(token->str.len);
 	memcpy(name.data(), token->str.array, token->str.len);
 
+	int atomicCounterIndex = -1;
+	for (size_t i = 0; i < parser.params.num; i++) {
+		const shader_var &var = parser.params.array[i];
+		if (name == var.name && !strcmp(var.type, "atomic_uint")) {
+			atomicCounterIndex = var.atomic_counter_index;
+			break;
+		}
+	}
+	if (atomicCounterIndex == -1) {
+		blog(LOG_WARNING, "There is no atomic counter var called %s",
+		     name.data());
+		return;
+	}
+
 	out << "InterlockedAdd(__uavBuffer["
-	    << mapping.at(name)
+	    << atomicCounterIndex
 	    << "], 1";
+}
+
+bool ShaderProcessor::PeekAndSkipAtomicUint(cf_token *&token)
+{
+	if (strref_cmp(&token->str, "uniform") != 0)
+		return false;
+
+	cf_token *next = token + 1;
+	SeekWhile(next, " ");
+	if (strref_cmp(&next->str, "atomic_uint") == 0) {
+		SeekUntil(next, ";");
+		token = next;
+		return true;
+	}
+	return false;
 }
 
 void ShaderProcessor::Process(const char *shader_string, const char *file)
