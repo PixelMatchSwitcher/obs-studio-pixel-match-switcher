@@ -170,8 +170,7 @@ gs_shader_param::gs_shader_param(shader_var &var, uint32_t &texCounter)
 }
 
 gs_shader_result::gs_shader_result(shader_var &var)
-	: name(var.name),
-	  param(nullptr)
+	: name(var.name), param(nullptr)
 {
 }
 
@@ -250,7 +249,8 @@ void ShaderProcessor::BuildString(string &outputString)
 
 	finalOutput << "static const bool obs_glsl_compile = false;\n\n";
 	if (parser.atomic_counter_next_index > 0)
-		finalOutput << "RWStructuredBuffer<uint> __uavBuffer : register(u1);\n\n";
+		finalOutput
+			<< "RWStructuredBuffer<uint> __uavBuffer : register(u1);\n\n";
 	finalOutput << tempOutput.str();
 
 	outputString = finalOutput.str();
@@ -258,8 +258,8 @@ void ShaderProcessor::BuildString(string &outputString)
 
 bool ShaderProcessor::SeekUntil(cf_token *&token, const char *str)
 {
-	while(token->type != CFTOKEN_NONE) {
-		if(strref_cmp(&token->str, str) == 0)
+	while (token->type != CFTOKEN_NONE) {
+		if (strref_cmp(&token->str, str) == 0)
 			return true;
 		token++;
 	}
@@ -268,16 +268,16 @@ bool ShaderProcessor::SeekUntil(cf_token *&token, const char *str)
 
 bool ShaderProcessor::SeekWhile(cf_token *&token, const char *str)
 {
-	while(token->type != CFTOKEN_NONE) {
-		if(strref_cmp(&token->str, str) != 0)
+	while (token->type != CFTOKEN_NONE) {
+		if (strref_cmp(&token->str, str) != 0)
 			return true;
 		token++;
 	}
 	return false;
 }
 
-void ShaderProcessor::ReplaceAtomicIncrement(
-	cf_token *&token, stringstream &out)
+void ShaderProcessor::ReplaceAtomicIncrement(cf_token *&token,
+					     stringstream &out)
 {
 	SeekUntil(token, "(");
 	token++;
@@ -301,9 +301,7 @@ void ShaderProcessor::ReplaceAtomicIncrement(
 		return;
 	}
 
-	out << "InterlockedAdd(__uavBuffer["
-	    << atomicCounterIndex
-	    << "], 1";
+	out << "InterlockedAdd(__uavBuffer[" << atomicCounterIndex << "], 1";
 }
 
 bool ShaderProcessor::PeekAndSkipAtomicUint(cf_token *&token)
@@ -333,5 +331,3 @@ void ShaderProcessor::Process(const char *shader_string, const char *file)
 	if (!success)
 		throw "Failed to parse shader";
 }
-
-

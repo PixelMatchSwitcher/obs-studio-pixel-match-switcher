@@ -199,9 +199,11 @@ void gs_vertex_shader::Rebuild(ID3D11Device *dev)
 			uavBuffer, &uavViewDesc, uavView.Assign());
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV view", hr);
-		hr = device->device->CreateBuffer(&uavTxfrBd, NULL, uavTxfrBuffer.Assign());
+		hr = device->device->CreateBuffer(&uavTxfrBd, NULL,
+						  uavTxfrBuffer.Assign());
 		if (FAILED(hr))
-			throw HRError("Failed to create UAV transfer buffer", hr);
+			throw HRError("Failed to create UAV transfer buffer",
+				      hr);
 	}
 
 	for (gs_shader_param &param : params) {
@@ -233,9 +235,10 @@ void gs_pixel_shader::Rebuild(ID3D11Device *dev)
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV view", hr);
 		hr = device->device->CreateBuffer(&uavTxfrBd, NULL,
-			uavTxfrBuffer.Assign());
+						  uavTxfrBuffer.Assign());
 		if (FAILED(hr))
-			throw HRError("Failed to create UAV transfer buffer", hr);
+			throw HRError("Failed to create UAV transfer buffer",
+				      hr);
 	}
 
 	for (gs_shader_param &param : params) {

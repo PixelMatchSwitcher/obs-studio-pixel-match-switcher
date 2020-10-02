@@ -222,15 +222,15 @@ void gs_shader::BuildUavBuffer()
 		// UAV buffer
 		memset(&uavBd, 0, sizeof(uavBd));
 		uavBd.Usage = D3D11_USAGE_DEFAULT;
-		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS
-				| D3D11_BIND_SHADER_RESOURCE;
+		uavBd.BindFlags = D3D11_BIND_UNORDERED_ACCESS |
+				  D3D11_BIND_SHADER_RESOURCE;
 		uavBd.ByteWidth = (UINT)uavSize;
 		uavBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 		uavBd.StructureByteStride = (UINT)uintSz;
 		uavBd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE |
 				       D3D11_CPU_ACCESS_READ;
-		HRESULT hr = device->device->CreateBuffer(
-			&uavBd, NULL, uavBuffer.Assign());
+		HRESULT hr = device->device->CreateBuffer(&uavBd, NULL,
+							  uavBuffer.Assign());
 		if (FAILED(hr))
 			throw HRError("Failed to create UAV buffer", hr);
 
@@ -253,13 +253,13 @@ void gs_shader::BuildUavBuffer()
 		uavTxfrBd.ByteWidth = (UINT)uavSize;
 		uavTxfrBd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 		uavTxfrBd.StructureByteStride = (UINT)uintSz;
-		uavTxfrBd.CPUAccessFlags
-			= D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+		uavTxfrBd.CPUAccessFlags = D3D11_CPU_ACCESS_READ |
+					   D3D11_CPU_ACCESS_WRITE;
 		hr = device->device->CreateBuffer(&uavTxfrBd, NULL,
-			uavTxfrBuffer.Assign());
+						  uavTxfrBuffer.Assign());
 		if (FAILED(hr))
-			throw HRError(
-				"Failed to create UAV transfer buffer", hr);
+			throw HRError("Failed to create UAV transfer buffer",
+				      hr);
 	}
 }
 
@@ -301,20 +301,23 @@ void gs_shader::Compile(const char *shaderString, const char *file,
 #endif
 }
 
-inline void gs_shader::UpdateParam(
-	vector<uint8_t> &constData, vector<uint8_t> &uavData,
-	gs_shader_param &param, bool &uploadConst, bool &uploadUav)
+inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
+				   vector<uint8_t> &uavData,
+				   gs_shader_param &param, bool &uploadConst,
+				   bool &uploadUav)
 {
 	if (param.type == GS_SHADER_PARAM_TEXTURE) {
 		if (param.curValue.size() == sizeof(gs_texture_t *)) {
 			gs_texture_t *tex;
-			memcpy(&tex, param.curValue.data(), sizeof(gs_texture_t *));
+			memcpy(&tex, param.curValue.data(),
+			       sizeof(gs_texture_t *));
 			device_load_texture(device, tex, param.textureID);
 
 			if (param.nextSampler) {
-				ID3D11SamplerState *state = param.nextSampler->state;
-				device->context->PSSetSamplers(param.textureID, 1,
-							       &state);
+				ID3D11SamplerState *state =
+					param.nextSampler->state;
+				device->context->PSSetSamplers(param.textureID,
+							       1, &state);
 				param.nextSampler = nullptr;
 			}
 		}
@@ -365,8 +368,8 @@ void gs_shader::UploadParams()
 	uavData.reserve(uavSize);
 
 	for (size_t i = 0; i < params.size(); i++)
-		UpdateParam(constData, uavData, params[i],
-			    uploadConst, uploadUav);
+		UpdateParam(constData, uavData, params[i], uploadConst,
+			    uploadUav);
 
 	if (constData.size() != constantSize)
 		throw "Invalid constant data size given to shader";
@@ -386,26 +389,25 @@ void gs_shader::UploadParams()
 		device->context->Unmap(constants, 0);
 	}
 	if (uploadUav) {
-		ID3D11UnorderedAccessView *uavs[] = { uavView.Get() };
-		UINT initCounts[] = { 0 };
+		ID3D11UnorderedAccessView *uavs[] = {uavView.Get()};
+		UINT initCounts[] = {0};
 
 		int i = device->curRenderSide;
-		ID3D11RenderTargetView *rtv
-			= device->curRenderTarget->renderTarget[i];
+		ID3D11RenderTargetView *rtv =
+			device->curRenderTarget->renderTarget[i];
 		ID3D11DepthStencilView *dsv = nullptr;
 		if (device->curZStencilBuffer)
 			dsv = device->curZStencilBuffer->view;
 
 		device->context->OMSetRenderTargetsAndUnorderedAccessViews(
-			1, &rtv, dsv,
-			1, 1, uavs, initCounts);
+			1, &rtv, dsv, 1, 1, uavs, initCounts);
 
 		D3D11_MAPPED_SUBRESOURCE map;
 		HRESULT hr;
-		hr = device->context->Map(uavTxfrBuffer, 0,
-					  D3D11_MAP_WRITE, 0, &map);
+		hr = device->context->Map(uavTxfrBuffer, 0, D3D11_MAP_WRITE, 0,
+					  &map);
 		if (FAILED(hr))
- 			throw HRError("Could not lock UAV transfer buffer", hr);
+			throw HRError("Could not lock UAV transfer buffer", hr);
 		memcpy(map.pData, uavData.data(), uavSize);
 		device->context->Unmap(uavTxfrBuffer, 0);
 		device->context->CopyResource(uavBuffer, uavTxfrBuffer);
@@ -434,8 +436,7 @@ void gs_shader::DownloadResults()
 			size_t uintSz = sizeof(unsigned int);
 			result.curValue.resize(uintSz);
 			memcpy(result.curValue.data(),
-			       resultsData.data() + result.param->pos,
-			       uintSz);
+			       resultsData.data() + result.param->pos, uintSz);
 		}
 	}
 }
@@ -581,7 +582,7 @@ void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 	shader_setval_inline(param, val, size);
 }
 
-void  gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
+void gs_shader_get_result(gs_sresult_t *result, struct darray *dst)
 {
 	const auto &val = result->curValue;
 	if (val.empty()) {

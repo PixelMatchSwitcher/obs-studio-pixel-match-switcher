@@ -78,8 +78,7 @@ struct ep_param {
 
 extern void ep_param_writevar(struct dstr *dst, struct darray *use_params);
 
-static inline void ep_param_init(struct ep_param *epp,
-				 char *type, char *name,
+static inline void ep_param_init(struct ep_param *epp, char *type, char *name,
 				 bool is_property, bool is_const,
 				 bool is_uniform, bool is_result)
 {

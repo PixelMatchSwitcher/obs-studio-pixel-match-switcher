@@ -195,13 +195,12 @@ static inline void download_results(struct darray *results)
 {
 	size_t i;
 	for (i = 0; i < results->num; i++) {
-		struct pass_shaderresult *result =
-			 darray_item(sizeof(struct pass_shaderresult), results, i);
+		struct pass_shaderresult *result = darray_item(
+			sizeof(struct pass_shaderresult), results, i);
 		struct gs_effect_result *eresult = result->eresult;
 		gs_sresult_t *sresult = result->sresult;
 		gs_shader_get_result(sresult, &eresult->cur_val.da);
 	}
-
 }
 
 void gs_effect_update_params(gs_effect_t *effect)
@@ -443,8 +442,7 @@ static inline void effect_setval_inline(gs_eparam_t *param, const void *data,
 	if (size_changed)
 		da_resize(param->cur_val, size);
 
-	if (size_changed ||
-	    param->type == GS_SHADER_PARAM_ATOMIC_UINT ||
+	if (size_changed || param->type == GS_SHADER_PARAM_ATOMIC_UINT ||
 	    memcmp(param->cur_val.array, data, size) != 0) {
 		memcpy(param->cur_val.array, data, size);
 		param->changed = true;

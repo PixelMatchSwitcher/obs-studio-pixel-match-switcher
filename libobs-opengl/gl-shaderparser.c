@@ -111,9 +111,8 @@ static void gl_write_var(struct gl_shader_parser *glsp, struct shader_var *var)
 
 	if (strcmp(var->type, "atomic_uint") == 0) {
 		layout_str = bmalloc(64);
-		snprintf(layout_str, 64,
-			"layout (binding = %u, offset = %u) ",
-			var->atomic_counter_index, 0);
+		snprintf(layout_str, 64, "layout (binding = %u, offset = %u) ",
+			 var->atomic_counter_index, 0);
 		dstr_cat(&glsp->gl_string, layout_str);
 		bfree(layout_str);
 	}

@@ -63,9 +63,8 @@ static inline void shader_var_init(struct shader_var *sv)
 }
 
 static inline void shader_var_init_param(struct shader_var *sv, char *type,
-					 char *name,
-					 bool is_uniform, bool is_const,
-					 bool is_result,
+					 char *name, bool is_uniform,
+					 bool is_const, bool is_result,
 					 int *atomic_counter_next_index)
 {
 	if (is_uniform)
@@ -84,7 +83,7 @@ static inline void shader_var_init_param(struct shader_var *sv, char *type,
 
 	if (strcmp(sv->type, "atomic_uint") == 0)
 		sv->atomic_counter_index = (*atomic_counter_next_index)++;
-	
+
 	da_init(sv->default_val);
 }
 

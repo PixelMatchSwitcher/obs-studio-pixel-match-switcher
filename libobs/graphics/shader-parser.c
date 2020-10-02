@@ -633,9 +633,8 @@ static void sp_parse_param(struct shader_parser *sp, char *type, char *name,
 			   bool is_const, bool is_uniform, bool is_result)
 {
 	struct shader_var param;
-	shader_var_init_param(&param, type, name,
-			      is_uniform, is_const, is_result,
-			      &(sp->atomic_counter_next_index));
+	shader_var_init_param(&param, type, name, is_uniform, is_const,
+			      is_result, &(sp->atomic_counter_next_index));
 
 	if (cf_token_is(&sp->cfp, ";"))
 		goto complete;
@@ -711,8 +710,7 @@ static void sp_parse_other(struct shader_parser *sp)
 		sp_parse_function(sp, type, name);
 		return;
 	} else {
-		sp_parse_param(sp, type, name,
-			       is_const, is_uniform, is_result);
+		sp_parse_param(sp, type, name, is_const, is_uniform, is_result);
 		return;
 	}
 
