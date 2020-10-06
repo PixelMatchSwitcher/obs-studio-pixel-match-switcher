@@ -17,15 +17,17 @@
 Unicode true
 ManifestDPIAware true
 
+!define INSTALL64 true
+
 ; Define your application name
-!define APPNAME "OBS Studio"
+!define APPNAME "OBS Studio with Pixel Match Switcher"
 
 !ifndef APPVERSION
-!define APPVERSION "25.0.8"
-!define SHORTVERSION "25.0.8"
+!define APPVERSION "0.13"
+!define SHORTVERSION "0.13"
 !endif
 
-!define APPNAMEANDVERSION "OBS Studio ${SHORTVERSION}"
+!define APPNAMEANDVERSION "OBS Studio and Pixel Match Switcher ${SHORTVERSION}"
 
 ; Additional script dependencies
 !include WinVer.nsh
@@ -34,16 +36,16 @@ ManifestDPIAware true
 ; Main Install settings
 Name "${APPNAMEANDVERSION}"
 !ifdef INSTALL64
-InstallDir "$PROGRAMFILES64\obs-studio"
+InstallDir "$PROGRAMFILES64\obs-studio-with-pixel-match-switcher"
 !else
-InstallDir "$PROGRAMFILES32\obs-studio"
+InstallDir "$PROGRAMFILES32\obs-studio-with-pixel-match-switcher"
 !endif
 InstallDirRegKey HKLM "Software\${APPNAME}" ""
 
 !ifdef INSTALL64
- OutFile "OBS-Studio-${SHORTVERSION}-Full-Installer-x64.exe"
+ OutFile "OBS-Studio-with-PixelMatchSwitcher-${SHORTVERSION}-x64.exe"
 !else
- OutFile "OBS-Studio-${SHORTVERSION}-Full-Installer-x86.exe"
+ OutFile "OBS-Studio-with-PixelMatchSwitcher-${SHORTVERSION}-x86.exe"
 !endif
 
 ; Use compression
@@ -61,16 +63,16 @@ RequestExecutionLevel admin
 
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN
-!define MUI_FINISHPAGE_RUN_TEXT "Launch OBS Studio ${SHORTVERSION}"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch OBS Studio with Pixel Match Switcher ${SHORTVERSION}"
 !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchOBS"
 
-!define MUI_WELCOMEPAGE_TEXT "This setup will guide you through installing OBS Studio.\n\nIt is recommended that you close all other applications before starting, including OBS Studio. This will make it possible to update relevant files without having to reboot your computer.\n\nClick Next to continue."
+!define MUI_WELCOMEPAGE_TEXT "This setup will guide you through installing OBS Studio with Pixel Match Switcher.\n\nIt is recommended that you close all other applications before starting, including OBS Studio. This will make it possible to update relevant files without having to reboot your computer.\n\nClick Next to continue."
 
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE PreReqCheck
 
 !define MUI_HEADERIMAGE
 !define MUI_PAGE_HEADER_TEXT "License Information"
-!define MUI_PAGE_HEADER_SUBTEXT "Please review the license terms before installing OBS Studio."
+!define MUI_PAGE_HEADER_SUBTEXT "Please review the license terms before installing OBS Studio with Pixel Match Switcher."
 !define MUI_LICENSEPAGE_TEXT_TOP "Press Page Down or scroll to see the rest of the license."
 !define MUI_LICENSEPAGE_TEXT_BOTTOM " "
 !define MUI_LICENSEPAGE_BUTTON "&Next >"
@@ -93,7 +95,7 @@ Function PreReqCheck
 !ifdef INSTALL64
 	${if} ${RunningX64}
 	${Else}
-		MessageBox MB_OK|MB_ICONSTOP "This version of OBS Studio is not compatible with your system.  Please use the 32bit (x86) installer."
+		MessageBox MB_OK|MB_ICONSTOP "This version of OBS Studio with Pixel Match Switcher is not compatible with your system.  Please use the 32bit (x86) installer."
 	${EndIf}
 	; Abort on XP or lower
 !endif
@@ -218,7 +220,7 @@ FunctionEnd
 Var dllFilesInUse
 
 Function checkDLLs
-	OBSInstallerUtils::ResetInUseFileChecks
+#	OBSInstallerUtils::ResetInUseFileChecks
 	OBSInstallerUtils::AddInUseFileCheck "$INSTDIR\data\obs-plugins\win-capture\graphics-hook32.dll"
 	OBSInstallerUtils::AddInUseFileCheck "$INSTDIR\data\obs-plugins\win-capture\graphics-hook64.dll"
 	OBSInstallerUtils::AddInUseFileCheck "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module32.dll"
@@ -241,9 +243,9 @@ FunctionEnd
 
 Function LaunchOBS
 !ifdef INSTALL64
-	Exec '"$WINDIR\explorer.exe" "$SMPROGRAMS\OBS Studio\OBS Studio (64bit).lnk"'
+	Exec '"$WINDIR\explorer.exe" "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (64bit).lnk"'
 !else
-	Exec '"$WINDIR\explorer.exe" "$SMPROGRAMS\OBS Studio\OBS Studio (32bit).lnk"'
+	Exec '"$WINDIR\explorer.exe" "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (32bit).lnk"'
 !endif
 FunctionEnd
 
@@ -281,7 +283,7 @@ Section "OBS Studio" SecCore
 	SetShellVarContext all
 
 	SetOutPath "$INSTDIR"
-	File /r "new\obs-browser\data"
+#	File /r "new\obs-browser\data"
 	SetOutPath "$INSTDIR\obs-plugins"
 	OBSInstallerUtils::KillProcess "32bit\cef-bootstrap.exe"
 	OBSInstallerUtils::KillProcess "32bit\obs-browser-page.exe"
@@ -290,7 +292,7 @@ Section "OBS Studio" SecCore
 		OBSInstallerUtils::KillProcess "64bit\obs-browser-page.exe"
 	${endif}
 !ifdef INSTALL64
-	File /r "new\obs-browser\obs-plugins\64bit"
+#	File /r "new\obs-browser\obs-plugins\64bit"
 	SetOutPath "$INSTDIR\bin\64bit"
 !else
 	File /r "new\obs-browser\obs-plugins\32bit"
@@ -300,34 +302,34 @@ Section "OBS Studio" SecCore
 	# ----------------------------
 	# Copy game capture files to ProgramData
 	SetOutPath "$APPDATA\obs-studio-hook"
-	File "new\core\data\obs-plugins\win-capture\graphics-hook32.dll"
+#	File "new\core\data\obs-plugins\win-capture\graphics-hook32.dll"
 	File "new\core\data\obs-plugins\win-capture\graphics-hook64.dll"
 	File "new\core\data\obs-plugins\win-capture\obs-vulkan32.json"
 	File "new\core\data\obs-plugins\win-capture\obs-vulkan64.json"
-	OBSInstallerUtils::AddAllApplicationPackages "$APPDATA\obs-studio-hook"
+#	OBSInstallerUtils::AddAllApplicationPackages "$APPDATA\obs-studio-hook"
 
 	WriteUninstaller "$INSTDIR\uninstall.exe"
 
 !ifdef INSTALL64
 	SetOutPath "$INSTDIR\bin\64bit"
-	CreateShortCut "$DESKTOP\OBS Studio.lnk" "$INSTDIR\bin\64bit\obs64.exe"
+	CreateShortCut "$DESKTOP\OBS Studio with Pixel Match Switcher.lnk" "$INSTDIR\bin\64bit\obs64.exe"
 !else
 	SetOutPath "$INSTDIR\bin\32bit"
-	CreateShortCut "$DESKTOP\OBS Studio.lnk" "$INSTDIR\bin\32bit\obs32.exe"
+	CreateShortCut "$DESKTOP\OBS Studio with Pixel Match Switcher.lnk" "$INSTDIR\bin\32bit\obs32.exe"
 !endif
 
-	CreateDirectory "$SMPROGRAMS\OBS Studio"
+	CreateDirectory "$SMPROGRAMS\OBS Studio with Pixel Match Switcher"
 
 !ifdef INSTALL64
 	SetOutPath "$INSTDIR\bin\64bit"
-	CreateShortCut "$SMPROGRAMS\OBS Studio\OBS Studio (64bit).lnk" "$INSTDIR\bin\64bit\obs64.exe"
+	CreateShortCut "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (64bit).lnk" "$INSTDIR\bin\64bit\obs64.exe"
 !else
 	SetOutPath "$INSTDIR\bin\32bit"
-	CreateDirectory "$SMPROGRAMS\OBS Studio"
-	CreateShortCut "$SMPROGRAMS\OBS Studio\OBS Studio (32bit).lnk" "$INSTDIR\bin\32bit\obs32.exe"
+	CreateDirectory "$SMPROGRAMS\OBS Studio with Pixel Match Switcher"
+	CreateShortCut "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (32bit).lnk" "$INSTDIR\bin\32bit\obs32.exe"
 !endif
 
-	CreateShortCut "$SMPROGRAMS\OBS Studio\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+	CreateShortCut "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
 Section -FinishSection
@@ -380,8 +382,8 @@ Section -FinishSection
 !else
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayIcon" "$INSTDIR\bin\32bit\obs32.exe"
 !endif
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Publisher" "OBS Project"
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "HelpLink" "https://obsproject.com"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Publisher" "PixelMatchSwitcher"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "HelpLink" "https://github.com/HoneyHazard/PixelMatchSwitcher"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "${APPVERSION}"
 
 SectionEnd
@@ -427,11 +429,11 @@ Section "un.obs-studio Program Files" UninstallSection1
 	Delete "$INSTDIR\uninstall.exe"
 
 	; Delete Shortcuts
-	Delete "$DESKTOP\OBS Studio.lnk"
-	Delete "$SMPROGRAMS\OBS Studio\OBS Studio (32bit).lnk"
-	Delete "$SMPROGRAMS\OBS Studio\Uninstall.lnk"
+	Delete "$DESKTOP\OBS Studio with Pixel Match Switcher.lnk"
+	Delete "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (32bit).lnk"
+	Delete "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\Uninstall.lnk"
 	${if} ${RunningX64}
-		Delete "$SMPROGRAMS\OBS Studio\OBS Studio (64bit).lnk"
+		Delete "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (64bit).lnk"
 	${endif}
 
 	IfFileExists "$INSTDIR\data\obs-plugins\win-ivcam\seg_service.exe" UnregisterSegService SkipUnreg
@@ -446,26 +448,26 @@ Section "un.obs-studio Program Files" UninstallSection1
 	RMDir "$INSTDIR"
 
 	; Remove remaining directories
-	RMDir "$SMPROGRAMS\OBS Studio"
-	RMDir "$INSTDIR\OBS Studio"
+	RMDir "$SMPROGRAMS\OBS Studio with Pixel Match Switcher"
+	RMDir "$INSTDIR\OBS Studio with Pixel Match Switcher"
 SectionEnd
 
 Section /o "un.User Settings" UninstallSection2
-	RMDir /r "$APPDATA\obs-studio"
+	RMDir /r "$APPDATA\obs-studio-with-pixel-match-switcher"
 SectionEnd
 
 !insertmacro MUI_UNFUNCTION_DESCRIPTION_BEGIN
-	!insertmacro MUI_DESCRIPTION_TEXT ${UninstallSection1} "Remove the OBS program files."
+	!insertmacro MUI_DESCRIPTION_TEXT ${UninstallSection1} "Remove the OBS with Pixel Match Switcher program files."
 	!insertmacro MUI_DESCRIPTION_TEXT ${UninstallSection2} "Removes all settings, scenes and sources, profiles, log files and other application data."
 !insertmacro MUI_UNFUNCTION_DESCRIPTION_END
 
 ; Version information
-VIProductVersion "${APPVERSION}.0"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "OBS Studio"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "obsproject.com"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "(c) 2012-2020"
+VIProductVersion "${APPVERSION}.0.0"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "OBS Studio with Pixel Match Switcher"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "PixelMatchSwitcher"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "(c) 2020"
 ; FileDescription is what shows in the UAC elevation prompt when signed
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "OBS Studio"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "1.0"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "OBS Studio with Pixel Match Switcher"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${SHORTVERSION}"
 
 ; eof
