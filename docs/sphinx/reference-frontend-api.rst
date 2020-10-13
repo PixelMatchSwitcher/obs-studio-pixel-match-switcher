@@ -105,6 +105,10 @@ Structures/Enumerations
 
      Triggered when the replay buffer has fully stopped.
 
+   - **OBS_FRONTEND_EVENT_REPLAY_BUFFER_SAVED**
+
+     Triggered when the replay buffer has been saved.
+
    - **OBS_FRONTEND_EVENT_STUDIO_MODE_ENABLED**
 
      Triggered when the user has turned on studio mode.
@@ -124,7 +128,7 @@ Structures/Enumerations
      the program is either about to load a new scene collection, or the
      program is about to exit.
 
-   - **OBS_FRONTEND_FINISHED_LOADING**
+   - **OBS_FRONTEND_EVENT_FINISHED_LOADING**
 
      Triggered when the program has finished loading.
 

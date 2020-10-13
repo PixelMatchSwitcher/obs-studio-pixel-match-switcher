@@ -6143,6 +6143,12 @@ void OBSBasic::ReplayBufferSave()
 	calldata_free(&cd);
 }
 
+void OBSBasic::ReplayBufferSaved()
+{
+	if (api)
+		api->on_event(OBS_FRONTEND_EVENT_REPLAY_BUFFER_SAVED);
+}
+
 void OBSBasic::ReplayBufferStop(int code)
 {
 	if (!outputHandler || !outputHandler->replayBuffer)
