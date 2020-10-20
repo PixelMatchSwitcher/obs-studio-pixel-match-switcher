@@ -215,6 +215,7 @@ static inline void effect_free(gs_effect_t *effect)
 		effect_technique_free(effect->techniques.array + i);
 
 	da_free(effect->params);
+	da_free(effect->results);
 	da_free(effect->techniques);
 
 	bfree(effect->effect_path);
