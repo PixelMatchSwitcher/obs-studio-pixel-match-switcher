@@ -1257,6 +1257,8 @@ void OBSApp::AppInit()
 				  Str("Untitled"));
 	config_set_default_string(globalConfig, "Basic", "SceneCollectionFile",
 				  Str("Untitled"));
+	config_set_default_bool(globalConfig, "Basic", "ConfigOnNewProfile",
+				true);
 
 	if (!config_has_user_value(globalConfig, "Basic", "Profile")) {
 		config_set_string(globalConfig, "Basic", "Profile",
@@ -1939,6 +1941,8 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 		RunOnceMutex rom = GetRunOnceMutex(already_running);
 #elif defined(__APPLE__)
 		CheckAppWithSameBundleID(already_running);
+#elif defined(__linux__)
+		RunningInstanceCheck(already_running);
 #endif
 
 		if (!already_running) {
