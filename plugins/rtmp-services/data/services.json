@@ -193,7 +193,7 @@
             "recommended": {
                 "keyint": 2,
                 "max video bitrate": 6000,
-                "max audio bitrate": 160,
+                "max audio bitrate": 320,
                 "x264opts": "scenecut=0"
             }
         },
@@ -232,6 +232,25 @@
                 {
                     "name": "Backup YouTube ingest server",
                     "url": "rtmp://b.rtmp.youtube.com/live2?backup=1"
+                }
+            ],
+            "recommended": {
+                "keyint": 2,
+                "max video bitrate": 51000,
+                "max audio bitrate": 160
+            }
+        },
+        {
+            "name": "YouTube - RTMPS (Beta)",
+            "common": true,
+            "servers": [
+                {
+                    "name": "Primary YouTube ingest server",
+                    "url": "rtmps://a.rtmps.youtube.com:443/live2"
+                },
+                {
+                    "name": "Backup YouTube ingest server",
+                    "url": "rtmps://b.rtmps.youtube.com:443/live2"
                 }
             ],
             "recommended": {
@@ -458,6 +477,9 @@
             "recommended": {
                 "keyint": 2,
                 "profile": "main",
+                "max width": 1280,
+                "max height": 720,
+                "max fps": 30,
                 "max video bitrate": 6000,
                 "max audio bitrate": 128
             }
@@ -1809,6 +1831,20 @@
                 {
                     "name": "Global (RTMP)",
                     "url": "rtmp://global-live.mux.com:5222/app"
+                }
+            ],
+            "recommended": {
+                "keyint": 2,
+                "max video bitrate": 5000,
+                "max audio bitrate": 160
+            }
+        },
+        {
+            "name": "Viloud",
+            "servers": [
+                {
+                    "name": "Default",
+                    "url": "rtmp://live.viloud.tv:5222/app"
                 }
             ],
             "recommended": {

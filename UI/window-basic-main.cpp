@@ -360,8 +360,6 @@ OBSBasic::OBSBasic(QWidget *parent)
 
 	QPoint curPos;
 
-	UpdateContextBar();
-
 	//restore parent window geometry
 	const char *geometry = config_get_string(App()->GlobalConfig(),
 						 "BasicWindow", "geometry");
@@ -1269,6 +1267,22 @@ bool OBSBasic::InitBasicConfigDefaults()
 	}
 
 	/* ----------------------------------------------------- */
+	/* move bitrate enforcement setting to new value         */
+	if (config_has_user_value(basicConfig, "SimpleOutput",
+				  "EnforceBitrate") &&
+	    !config_has_user_value(basicConfig, "Stream1",
+				   "IgnoreRecommended") &&
+	    !config_has_user_value(basicConfig, "Stream1", "MovedOldEnforce")) {
+		bool enforce = config_get_bool(basicConfig, "SimpleOutput",
+					       "EnforceBitrate");
+		config_set_bool(basicConfig, "Stream1", "IgnoreRecommended",
+				!enforce);
+		config_set_bool(basicConfig, "Stream1", "MovedOldEnforce",
+				true);
+		changed = true;
+	}
+
+	/* ----------------------------------------------------- */
 
 	if (changed)
 		config_save_safe(basicConfig, "tmp", nullptr);
@@ -1276,6 +1290,9 @@ bool OBSBasic::InitBasicConfigDefaults()
 	/* ----------------------------------------------------- */
 
 	config_set_default_string(basicConfig, "Output", "Mode", "Simple");
+
+	config_set_default_bool(basicConfig, "Stream1", "IgnoreRecommended",
+				false);
 
 	config_set_default_string(basicConfig, "SimpleOutput", "FilePath",
 				  GetDefaultVideoSavePath().c_str());
@@ -1285,8 +1302,6 @@ bool OBSBasic::InitBasicConfigDefaults()
 	config_set_default_uint(basicConfig, "SimpleOutput", "ABitrate", 160);
 	config_set_default_bool(basicConfig, "SimpleOutput", "UseAdvanced",
 				false);
-	config_set_default_bool(basicConfig, "SimpleOutput", "EnforceBitrate",
-				true);
 	config_set_default_string(basicConfig, "SimpleOutput", "Preset",
 				  "veryfast");
 	config_set_default_string(basicConfig, "SimpleOutput", "NVENCPreset",
@@ -1303,6 +1318,7 @@ bool OBSBasic::InitBasicConfigDefaults()
 				true);
 	config_set_default_bool(basicConfig, "AdvOut", "UseRescale", false);
 	config_set_default_uint(basicConfig, "AdvOut", "TrackIndex", 1);
+	config_set_default_uint(basicConfig, "AdvOut", "VodTrackIndex", 2);
 	config_set_default_string(basicConfig, "AdvOut", "Encoder", "obs_x264");
 
 	config_set_default_string(basicConfig, "AdvOut", "RecType", "Standard");
@@ -1755,6 +1771,8 @@ void OBSBasic::OBSInit()
 					       "ShowContextToolbars");
 		ui->toggleContextBar->setChecked(visible);
 		ui->contextContainer->setVisible(visible);
+		if (visible)
+			UpdateContextBar(true);
 	} else {
 		ui->toggleContextBar->setChecked(true);
 		ui->contextContainer->setVisible(true);
@@ -2929,8 +2947,11 @@ static bool is_network_media_source(obs_source_t *source, const char *id)
 	return !is_local_file;
 }
 
-void OBSBasic::UpdateContextBar()
+void OBSBasic::UpdateContextBar(bool force)
 {
+	if (!ui->contextContainer->isVisible() && !force)
+		return;
+
 	OBSSceneItem item = GetCurrentSceneItem();
 
 	ClearContextBar();
@@ -7362,6 +7383,7 @@ void OBSBasic::on_toggleContextBar_toggled(bool visible)
 	config_set_bool(App()->GlobalConfig(), "BasicWindow",
 			"ShowContextToolbars", visible);
 	this->ui->contextContainer->setVisible(visible);
+	UpdateContextBar(true);
 }
 
 void OBSBasic::on_toggleStatusBar_toggled(bool visible)

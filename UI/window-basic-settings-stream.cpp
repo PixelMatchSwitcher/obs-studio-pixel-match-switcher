@@ -71,8 +71,14 @@ void OBSBasicSettings::InitStreamPage()
 		SLOT(UpdateServerList()));
 	connect(ui->service, SIGNAL(currentIndexChanged(int)), this,
 		SLOT(UpdateKeyLink()));
+	connect(ui->service, SIGNAL(currentIndexChanged(int)), this,
+		SLOT(UpdateVodTrackSetting()));
+	connect(ui->service, SIGNAL(currentIndexChanged(int)), this,
+		SLOT(UpdateServiceRecommendations()));
 	connect(ui->customServer, SIGNAL(textChanged(const QString &)), this,
 		SLOT(UpdateKeyLink()));
+	connect(ui->ignoreRecommended, SIGNAL(clicked(bool)), this,
+		SLOT(DisplayEnforceWarning(bool)));
 	connect(ui->customServer, SIGNAL(editingFinished(const QString &)),
 		this, SLOT(UpdateKeyLink()));
 	connect(ui->service, SIGNAL(currentIndexChanged(int)), this,
@@ -81,6 +87,9 @@ void OBSBasicSettings::InitStreamPage()
 
 void OBSBasicSettings::LoadStream1Settings()
 {
+	bool ignoreRecommended =
+		config_get_bool(main->Config(), "Stream1", "IgnoreRecommended");
+
 	obs_service_t *service_obj = main->GetService();
 	const char *type = obs_service_get_type(service_obj);
 
@@ -141,9 +150,13 @@ void OBSBasicSettings::LoadStream1Settings()
 
 	UpdateKeyLink();
 	UpdateMoreInfoLink();
+	UpdateVodTrackSetting();
+	UpdateServiceRecommendations();
 
 	bool streamActive = obs_frontend_streaming_active();
 	ui->streamPage->setEnabled(!streamActive);
+
+	ui->ignoreRecommended->setChecked(ignoreRecommended);
 
 	loading = false;
 }
@@ -213,6 +226,8 @@ void OBSBasicSettings::SaveStream1Settings()
 	main->auth = auth;
 	if (!!main->auth)
 		main->auth->LoadUI();
+
+	SaveCheckBox(ui->ignoreRecommended, "Stream1", "IgnoreRecommended");
 }
 
 void OBSBasicSettings::UpdateMoreInfoLink()
@@ -593,4 +608,120 @@ void OBSBasicSettings::on_useAuth_toggled()
 	ui->authUsername->setVisible(use_auth);
 	ui->authPwLabel->setVisible(use_auth);
 	ui->authPwWidget->setVisible(use_auth);
+}
+
+void OBSBasicSettings::UpdateVodTrackSetting()
+{
+	bool enableVodTrack = ui->service->currentText() == "Twitch";
+	bool wasEnabled = !!vodTrackCheckbox;
+
+	if (enableVodTrack == wasEnabled)
+		return;
+
+	if (!enableVodTrack) {
+		delete vodTrackCheckbox;
+		delete vodTrackContainer;
+		return;
+	}
+
+	vodTrackCheckbox = new QCheckBox(
+		QTStr("Basic.Settings.Output.Adv.TwitchVodTrack"));
+	vodTrackCheckbox->setLayoutDirection(Qt::RightToLeft);
+
+	vodTrackContainer = new QWidget();
+	QHBoxLayout *vodTrackLayout = new QHBoxLayout();
+	for (int i = 0; i < MAX_AUDIO_MIXES; i++) {
+		vodTrack[i] = new QRadioButton(QString::number(i + 1));
+		vodTrackLayout->addWidget(vodTrack[i]);
+
+		HookWidget(vodTrack[i], SIGNAL(clicked(bool)),
+			   SLOT(OutputsChanged()));
+	}
+
+	HookWidget(vodTrackCheckbox, SIGNAL(clicked(bool)),
+		   SLOT(OutputsChanged()));
+
+	vodTrackLayout->addStretch();
+	vodTrackLayout->setContentsMargins(0, 0, 0, 0);
+
+	vodTrackContainer->setLayout(vodTrackLayout);
+
+	ui->advOutTopLayout->insertRow(2, vodTrackCheckbox, vodTrackContainer);
+
+	bool vodTrackEnabled =
+		config_get_bool(main->Config(), "AdvOut", "VodTrackEnabled");
+	vodTrackCheckbox->setChecked(vodTrackEnabled);
+	vodTrackContainer->setEnabled(vodTrackEnabled);
+
+	connect(vodTrackCheckbox, SIGNAL(clicked(bool)), vodTrackContainer,
+		SLOT(setEnabled(bool)));
+
+	int trackIndex =
+		config_get_int(main->Config(), "AdvOut", "VodTrackIndex");
+	for (int i = 0; i < MAX_AUDIO_MIXES; i++) {
+		vodTrack[i]->setChecked((i + 1) == trackIndex);
+	}
+}
+
+OBSService OBSBasicSettings::GetStream1Service()
+{
+	return stream1Changed ? SpawnTempService()
+			      : OBSService(main->GetService());
+}
+
+void OBSBasicSettings::UpdateServiceRecommendations()
+{
+	bool customServer = IsCustomService();
+	ui->ignoreRecommended->setVisible(!customServer);
+	ui->enforceSettingsLabel->setVisible(!customServer);
+
+	OBSService service = GetStream1Service();
+
+	int vbitrate, abitrate;
+	obs_service_get_max_bitrate(service, &vbitrate, &abitrate);
+
+	QString text;
+
+#define ENFORCE_TEXT(x) QTStr("Basic.Settings.Stream.Recommended." x)
+	if (vbitrate)
+		text += ENFORCE_TEXT("MaxVideoBitrate")
+				.arg(QString::number(vbitrate));
+	if (abitrate) {
+		if (!text.isEmpty())
+			text += "\n";
+		text += ENFORCE_TEXT("MaxAudioBitrate")
+				.arg(QString::number(abitrate));
+	}
+#undef ENFORCE_TEXT
+
+	ui->enforceSettingsLabel->setText(text);
+}
+
+void OBSBasicSettings::DisplayEnforceWarning(bool checked)
+{
+	if (IsCustomService())
+		return;
+
+	if (!checked) {
+		SimpleRecordingEncoderChanged();
+		return;
+	}
+
+	QMessageBox::StandardButton button;
+
+#define ENFORCE_WARNING(x) \
+	QTStr("Basic.Settings.Stream.IgnoreRecommended.Warn." x)
+
+	button = OBSMessageBox::question(this, ENFORCE_WARNING("Title"),
+					 ENFORCE_WARNING("Text"));
+#undef ENFORCE_WARNING
+
+	if (button == QMessageBox::No) {
+		QMetaObject::invokeMethod(ui->ignoreRecommended, "setChecked",
+					  Qt::QueuedConnection,
+					  Q_ARG(bool, false));
+		return;
+	}
+
+	SimpleRecordingEncoderChanged();
 }
