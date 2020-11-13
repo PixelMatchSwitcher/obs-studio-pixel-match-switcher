@@ -43,9 +43,9 @@ InstallDir "$PROGRAMFILES32\obs-studio-with-pixel-match-switcher"
 InstallDirRegKey HKLM "Software\${APPNAME}" ""
 
 !ifdef INSTALL64
- OutFile "OBS-Studio-with-PixelMatchSwitcher-${SHORTVERSION}-x64.exe"
+ OutFile "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x64.exe"
 !else
- OutFile "OBS-Studio-with-PixelMatchSwitcher-${SHORTVERSION}-x86.exe"
+ OutFile "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x86.exe"
 !endif
 
 ; Use compression
