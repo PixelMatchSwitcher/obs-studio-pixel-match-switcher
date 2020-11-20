@@ -122,6 +122,8 @@ private:
 	int channelIndex = 0;
 
 	int lastSimpleRecQualityIdx = 0;
+	int lastServiceIdx = -1;
+	int lastIgnoreRecommended = -1;
 	int lastChannelSetupIdx = 0;
 
 	OBSFFFormatDesc formats;
@@ -157,6 +159,8 @@ private:
 	uint32_t outputCX = 0;
 	uint32_t outputCY = 0;
 
+	QPointer<QCheckBox> simpleVodTrack;
+
 	QPointer<QCheckBox> vodTrackCheckbox;
 	QPointer<QWidget> vodTrackContainer;
 	QPointer<QRadioButton> vodTrack[MAX_AUDIO_MIXES];
@@ -174,6 +178,11 @@ private:
 	void SaveFormat(QComboBox *combo);
 	void SaveEncoder(QComboBox *combo, const char *section,
 			 const char *value);
+
+	bool ResFPSValid(obs_service_resolution *res_list, size_t res_count,
+			 int max_fps);
+	void ClosestResFPS(obs_service_resolution *res_list, size_t res_count,
+			   int max_fps, int &new_cx, int &new_cy, int &new_fps);
 
 	inline bool Changed() const
 	{
@@ -246,6 +255,8 @@ private slots:
 	void UpdateKeyLink();
 	void UpdateVodTrackSetting();
 	void UpdateServiceRecommendations();
+	void RecreateOutputResolutionWidget();
+	void UpdateResFPSLimits();
 	void UpdateMoreInfoLink();
 	void DisplayEnforceWarning(bool checked);
 	void on_show_clicked();
@@ -275,7 +286,8 @@ private:
 
 	/* video */
 	void LoadRendererList();
-	void ResetDownscales(uint32_t cx, uint32_t cy);
+	void ResetDownscales(uint32_t cx, uint32_t cy,
+			     bool ignoreAllSignals = false);
 	void LoadDownscaleFilters();
 	void LoadResolutionLists();
 	void LoadFPSData();
