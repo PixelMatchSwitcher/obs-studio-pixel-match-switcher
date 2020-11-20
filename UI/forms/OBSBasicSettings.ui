@@ -1295,8 +1295,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>601</width>
-              <height>602</height>
+              <width>820</width>
+              <height>677</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_21">
@@ -1402,7 +1402,7 @@
                    <property name="title">
                     <string>Basic.Settings.Output.Adv.Streaming</string>
                    </property>
-                   <layout class="QFormLayout" name="formLayout_20">
+                   <layout class="QFormLayout" name="simpleStreamingLayout">
                     <property name="fieldGrowthPolicy">
                      <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
                     </property>
@@ -4304,7 +4304,7 @@
           </layout>
          </item>
          <item row="3" column="0">
-          <widget class="QLabel" name="label_10">
+          <widget class="QLabel" name="outputResLabel">
            <property name="text">
             <string>Basic.Settings.Video.ScaledResolution</string>
            </property>
@@ -4552,7 +4552,7 @@
           </widget>
          </item>
          <item row="3" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_28">
+          <layout class="QHBoxLayout" name="outputResLayout">
            <property name="spacing">
             <number>6</number>
            </property>
@@ -4639,7 +4639,7 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>599</width>
+              <width>803</width>
               <height>781</height>
              </rect>
             </property>

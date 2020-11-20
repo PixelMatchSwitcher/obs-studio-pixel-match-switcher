@@ -1125,7 +1125,12 @@ OBSApp::OBSApp(int &argc, char **argv, profiler_name_store_t *store)
 {
 	sleepInhibitor = os_inhibit_sleep_create("OBS Video/audio");
 
+#ifdef __APPLE__
+	setWindowIcon(
+		QIcon::fromTheme("obs", QIcon(":/res/images/obs_256x256.png")));
+#else
 	setWindowIcon(QIcon::fromTheme("obs", QIcon(":/res/images/obs.png")));
+#endif
 }
 
 OBSApp::~OBSApp()
@@ -1435,6 +1440,8 @@ string OBSApp::GetVersionString() const
 	ver << "windows)";
 #elif __APPLE__
 	ver << "mac)";
+#elif __OpenBSD__
+	ver << "openbsd)";
 #elif __FreeBSD__
 	ver << "freebsd)";
 #else /* assume linux for the time being */
@@ -1943,6 +1950,8 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 		CheckAppWithSameBundleID(already_running);
 #elif defined(__linux__)
 		RunningInstanceCheck(already_running);
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
+		PIDFileCheck(already_running);
 #endif
 
 		if (!already_running) {

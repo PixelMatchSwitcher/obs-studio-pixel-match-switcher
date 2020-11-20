@@ -1349,7 +1349,8 @@ static const double vals[] = {1.0, 1.25, (1.0 / 0.75), 1.5,  (1.0 / 0.6), 1.75,
 
 static const size_t numVals = sizeof(vals) / sizeof(double);
 
-void OBSBasicSettings::ResetDownscales(uint32_t cx, uint32_t cy)
+void OBSBasicSettings::ResetDownscales(uint32_t cx, uint32_t cy,
+				       bool ignoreAllSignals)
 {
 	QString advRescale;
 	QString advRecRescale;
@@ -1364,9 +1365,17 @@ void OBSBasicSettings::ResetDownscales(uint32_t cx, uint32_t cy)
 	advRecRescale = ui->advOutRecRescale->lineEdit()->text();
 	advFFRescale = ui->advOutFFRescale->lineEdit()->text();
 
-	ui->outputResolution->blockSignals(true);
+	bool lockedOutputRes = !ui->outputResolution->isEditable();
 
-	ui->outputResolution->clear();
+	if (!lockedOutputRes) {
+		ui->outputResolution->blockSignals(true);
+		ui->outputResolution->clear();
+	}
+	if (ignoreAllSignals) {
+		ui->advOutRescale->blockSignals(true);
+		ui->advOutRecRescale->blockSignals(true);
+		ui->advOutFFRescale->blockSignals(true);
+	}
 	ui->advOutRescale->clear();
 	ui->advOutRecRescale->clear();
 	ui->advOutFFRescale->clear();
@@ -1393,7 +1402,8 @@ void OBSBasicSettings::ResetDownscales(uint32_t cx, uint32_t cy)
 
 		string res = ResString(downscaleCX, downscaleCY);
 		string outRes = ResString(outDownscaleCX, outDownscaleCY);
-		ui->outputResolution->addItem(res.c_str());
+		if (!lockedOutputRes)
+			ui->outputResolution->addItem(res.c_str());
 		ui->advOutRescale->addItem(outRes.c_str());
 		ui->advOutRecRescale->addItem(outRes.c_str());
 		ui->advOutFFRescale->addItem(outRes.c_str());
@@ -1412,23 +1422,27 @@ void OBSBasicSettings::ResetDownscales(uint32_t cx, uint32_t cy)
 
 	string res = ResString(cx, cy);
 
-	float baseAspect = float(cx) / float(cy);
-	float outputAspect = float(out_cx) / float(out_cy);
+	if (!lockedOutputRes) {
+		float baseAspect = float(cx) / float(cy);
+		float outputAspect = float(out_cx) / float(out_cy);
+		bool closeAspect = close_float(baseAspect, outputAspect, 0.01f);
 
-	bool closeAspect = close_float(baseAspect, outputAspect, 0.01f);
-	if (closeAspect) {
-		ui->outputResolution->lineEdit()->setText(oldOutputRes);
-		on_outputResolution_editTextChanged(oldOutputRes);
-	} else {
-		ui->outputResolution->lineEdit()->setText(bestScale.c_str());
-		on_outputResolution_editTextChanged(bestScale.c_str());
-	}
+		if (closeAspect) {
+			ui->outputResolution->lineEdit()->setText(oldOutputRes);
+			on_outputResolution_editTextChanged(oldOutputRes);
+		} else {
+			ui->outputResolution->lineEdit()->setText(
+				bestScale.c_str());
+			on_outputResolution_editTextChanged(bestScale.c_str());
+		}
 
-	ui->outputResolution->blockSignals(false);
+		ui->outputResolution->blockSignals(false);
 
-	if (!closeAspect) {
-		ui->outputResolution->setProperty("changed", QVariant(true));
-		videoChanged = true;
+		if (!closeAspect) {
+			ui->outputResolution->setProperty("changed",
+							  QVariant(true));
+			videoChanged = true;
+		}
 	}
 
 	if (advRescale.isEmpty())
@@ -1441,6 +1455,12 @@ void OBSBasicSettings::ResetDownscales(uint32_t cx, uint32_t cy)
 	ui->advOutRescale->lineEdit()->setText(advRescale);
 	ui->advOutRecRescale->lineEdit()->setText(advRecRescale);
 	ui->advOutFFRescale->lineEdit()->setText(advFFRescale);
+
+	if (ignoreAllSignals) {
+		ui->advOutRescale->blockSignals(false);
+		ui->advOutRecRescale->blockSignals(false);
+		ui->advOutFFRescale->blockSignals(false);
+	}
 }
 
 void OBSBasicSettings::LoadDownscaleFilters()
@@ -3383,6 +3403,7 @@ void OBSBasicSettings::SaveOutputSettings()
 	SaveEdit(ui->advOutTrack6Name, "AdvOut", "Track6Name");
 
 	if (vodTrackCheckbox) {
+		SaveCheckBox(simpleVodTrack, "SimpleOutput", "VodTrackEnabled");
 		SaveCheckBox(vodTrackCheckbox, "AdvOut", "VodTrackEnabled");
 		SaveTrackIndex(main->Config(), "AdvOut", "VodTrackIndex",
 			       vodTrack[0], vodTrack[1], vodTrack[2],
@@ -3872,14 +3893,20 @@ void OBSBasicSettings::on_colorFormat_currentIndexChanged(const QString &text)
 static bool ValidResolutions(Ui::OBSBasicSettings *ui)
 {
 	QString baseRes = ui->baseResolution->lineEdit()->text();
-	QString outputRes = ui->outputResolution->lineEdit()->text();
 	uint32_t cx, cy;
 
-	if (!ConvertResText(QT_TO_UTF8(baseRes), cx, cy) ||
-	    !ConvertResText(QT_TO_UTF8(outputRes), cx, cy)) {
-
+	if (!ConvertResText(QT_TO_UTF8(baseRes), cx, cy)) {
 		ui->videoMsg->setText(QTStr(INVALID_RES_STR));
 		return false;
+	}
+
+	bool lockedOutRes = !ui->outputResolution->isEditable();
+	if (!lockedOutRes) {
+		QString outRes = ui->outputResolution->lineEdit()->text();
+		if (!ConvertResText(QT_TO_UTF8(outRes), cx, cy)) {
+			ui->videoMsg->setText(QTStr(INVALID_RES_STR));
+			return false;
+		}
 	}
 
 	ui->videoMsg->setText("");
@@ -4852,4 +4879,35 @@ int OBSBasicSettings::CurrentFLVTrack()
 		return 6;
 
 	return 0;
+}
+
+/* Using setEditable(true) on a QComboBox when there's a custom style in use
+ * does not work properly, so instead completely recreate the widget, which
+ * seems to work fine. */
+void OBSBasicSettings::RecreateOutputResolutionWidget()
+{
+	QSizePolicy sizePolicy = ui->outputResolution->sizePolicy();
+	bool changed = WidgetChanged(ui->outputResolution);
+
+	delete ui->outputResolution;
+	ui->outputResolution = new QComboBox(ui->videoPage);
+	ui->outputResolution->setObjectName(
+		QString::fromUtf8("outputResolution"));
+	ui->outputResolution->setSizePolicy(sizePolicy);
+	ui->outputResolution->setEditable(true);
+	ui->outputResolution->setProperty("changed", changed);
+	ui->outputResLabel->setBuddy(ui->outputResolution);
+
+	ui->outputResLayout->insertWidget(0, ui->outputResolution);
+
+	QWidget::setTabOrder(ui->baseResolution, ui->outputResolution);
+	QWidget::setTabOrder(ui->outputResolution, ui->downscaleFilter);
+
+	HookWidget(ui->outputResolution, CBEDIT_CHANGED, VIDEO_RES);
+
+	connect(ui->outputResolution, &QComboBox::editTextChanged, this,
+		&OBSBasicSettings::on_outputResolution_editTextChanged);
+
+	ui->outputResolution->lineEdit()->setValidator(
+		ui->baseResolution->lineEdit()->validator());
 }
