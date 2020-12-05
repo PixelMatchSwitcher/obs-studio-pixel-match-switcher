@@ -1469,7 +1469,7 @@ bool OBSBasic::InitBasicConfig()
 
 	ret = GetProfilePath(configPath, sizeof(configPath), "basic.ini");
 	if (ret <= 0) {
-		OBSErrorBox(nullptr, "Failed to get base.ini path");
+		OBSErrorBox(nullptr, "Failed to get basic.ini path");
 		return false;
 	}
 
@@ -1697,6 +1697,12 @@ void OBSBasic::OBSInit()
 	InitOBSCallbacks();
 	InitHotkeys();
 
+	/* hack to prevent elgato from loading its own Qt5Network that it tries
+	 * to ship with */
+#if defined(_WIN32) && !defined(_DEBUG)
+	LoadLibraryW(L"Qt5Network");
+#endif
+
 	AddExtraModulePaths();
 	blog(LOG_INFO, "---------------------------------");
 	obs_load_all_modules();
@@ -1764,19 +1770,12 @@ void OBSBasic::OBSInit()
 		GetGlobalConfig(), "BasicWindow", "ShowSourceIcons");
 	ui->toggleSourceIcons->setChecked(sourceIconsVisible);
 
-	if (config_has_user_value(App()->GlobalConfig(), "BasicWindow",
-				  "ShowContextToolbars")) {
-		bool visible = config_get_bool(App()->GlobalConfig(),
-					       "BasicWindow",
-					       "ShowContextToolbars");
-		ui->toggleContextBar->setChecked(visible);
-		ui->contextContainer->setVisible(visible);
-		if (visible)
-			UpdateContextBar(true);
-	} else {
-		ui->toggleContextBar->setChecked(true);
-		ui->contextContainer->setVisible(true);
-	}
+	bool contextVisible = config_get_bool(
+		App()->GlobalConfig(), "BasicWindow", "ShowContextToolbars");
+	ui->toggleContextBar->setChecked(contextVisible);
+	ui->contextContainer->setVisible(contextVisible);
+	if (contextVisible)
+		UpdateContextBar(true);
 
 	{
 		ProfileScope("OBSBasic::Load");
@@ -5025,9 +5024,8 @@ void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 
 		ui->actionCopyFilters->setEnabled(true);
 		ui->actionCopySource->setEnabled(true);
-	} else {
-		ui->actionPasteFilters->setEnabled(false);
 	}
+	ui->actionPasteFilters->setEnabled(copyFiltersString && idx != -1);
 
 	popup.exec(QCursor::pos());
 }
@@ -8287,7 +8285,6 @@ void OBSBasic::UpdateReplayBuffer(bool activate)
 	replay.reset(new QPushButton());
 	replay->setAccessibleName(QTStr("Basic.Main.SaveReplay"));
 	replay->setToolTip(QTStr("Basic.Main.SaveReplay"));
-	replay->setCheckable(true);
 	replay->setChecked(false);
 	replay->setProperty("themeID",
 			    QVariant(QStringLiteral("replayIconSmall")));

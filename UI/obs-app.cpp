@@ -35,10 +35,12 @@
 #include <QProxyStyle>
 #include <QScreen>
 #include <QProcess>
+#include <QAccessible>
 
 #include "qt-wrappers.hpp"
 #include "obs-app.hpp"
 #include "log-viewer.hpp"
+#include "slider-ignorewheel.hpp"
 #include "window-basic-main.hpp"
 #include "window-basic-settings.hpp"
 #include "crash-report.hpp"
@@ -114,7 +116,7 @@ QObject *CreateShortcutFilter()
 			case Qt::MouseButtonMask:
 				return false;
 
-			case Qt::MidButton:
+			case Qt::MiddleButton:
 				hotkey.key = OBS_KEY_MOUSE3;
 				break;
 
@@ -446,6 +448,8 @@ bool OBSApp::InitGlobalConfigDefaults()
 				true);
 	config_set_default_bool(globalConfig, "BasicWindow", "ShowSourceIcons",
 				true);
+	config_set_default_bool(globalConfig, "BasicWindow",
+				"ShowContextToolbars", true);
 	config_set_default_bool(globalConfig, "BasicWindow", "StudioModeLabels",
 				true);
 
@@ -1899,6 +1903,17 @@ static auto ProfilerFree = [](void *) {
 	profiler_free();
 };
 
+QAccessibleInterface *accessibleFactory(const QString &classname,
+					QObject *object)
+{
+	if (classname == QLatin1String("VolumeSlider") && object &&
+	    object->isWidgetType())
+		return new VolumeAccessibleInterface(
+			static_cast<QWidget *>(object));
+
+	return nullptr;
+}
+
 static const char *run_program_init = "run_program_init";
 static int run_program(fstream &logFile, int argc, char *argv[])
 {
@@ -1917,6 +1932,10 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
 	QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+	QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
+		Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+#endif
 
 #if !defined(_WIN32) && !defined(__APPLE__) && BROWSER_AVAILABLE
 	setenv("QT_NO_GLIB", "1", true);
@@ -1930,6 +1949,8 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 
 	OBSApp program(argc, argv, profilerNameStore.get());
 	try {
+		QAccessible::installFactory(accessibleFactory);
+
 		bool created_log = false;
 
 		program.AppInit();
