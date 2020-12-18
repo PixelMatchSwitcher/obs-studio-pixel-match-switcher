@@ -19,3 +19,6 @@
 [submodule "UI/frontend-plugins/PixelMatchSwitcher"]
 	path = UI/frontend-plugins/PixelMatchSwitcher
 	url = git@github.com:HoneyHazard/PixelMatchSwitcher.git
+[submodule "plugins/obs-move-transition"]
+	path = plugins/obs-move-transition
+	url = https://github.com/exeldro/obs-move-transition.git
