@@ -2452,7 +2452,9 @@ void OBSBasic::ClearHotkeys()
 	obs_hotkey_pair_unregister(recordingHotkeys);
 	obs_hotkey_pair_unregister(pauseHotkeys);
 	obs_hotkey_pair_unregister(replayBufHotkeys);
+	obs_hotkey_pair_unregister(vcamHotkeys);
 	obs_hotkey_pair_unregister(togglePreviewHotkeys);
+	obs_hotkey_pair_unregister(contextBarHotkeys);
 	obs_hotkey_unregister(forceStreamingStopHotkey);
 	obs_hotkey_unregister(togglePreviewProgramHotkey);
 	obs_hotkey_unregister(transitionHotkey);
@@ -2944,6 +2946,12 @@ static bool is_network_media_source(obs_source_t *source, const char *id)
 	obs_data_release(s);
 
 	return !is_local_file;
+}
+
+void OBSBasic::UpdateContextBarDeferred(bool force)
+{
+	QMetaObject::invokeMethod(this, "UpdateContextBar",
+				  Qt::QueuedConnection, Q_ARG(bool, force));
 }
 
 void OBSBasic::UpdateContextBar(bool force)
