@@ -306,22 +306,7 @@ inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 				   gs_shader_param &param, bool &uploadConst,
 				   bool &uploadUav)
 {
-	if (param.type == GS_SHADER_PARAM_TEXTURE) {
-		if (param.curValue.size() == sizeof(gs_texture_t *)) {
-			gs_texture_t *tex;
-			memcpy(&tex, param.curValue.data(),
-			       sizeof(gs_texture_t *));
-			device_load_texture(device, tex, param.textureID);
-
-			if (param.nextSampler) {
-				ID3D11SamplerState *state =
-					param.nextSampler->state;
-				device->context->PSSetSamplers(param.textureID,
-							       1, &state);
-				param.nextSampler = nullptr;
-			}
-		}
-	} else if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
+	if (param.type == GS_SHADER_PARAM_ATOMIC_UINT) {
 		if (!param.curValue.size())
 			throw "Not all shader parameters were set";
 		/* padding in case the UAV var needs to start at a new
@@ -335,7 +320,7 @@ inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 		uavData.insert(uavData.end(), param.curValue.begin(),
 			       param.curValue.end());
 		uploadUav = true;
-	} else {
+	} else if (param.type != GS_SHADER_PARAM_TEXTURE) {
 		if (!param.curValue.size())
 			throw "Not all shader parameters were set";
 
@@ -354,6 +339,18 @@ inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 		if (param.changed) {
 			uploadConst = true;
 			param.changed = false;
+		}
+
+	} else if (param.curValue.size() == sizeof(gs_texture_t *)) {
+		gs_texture_t *tex;
+		memcpy(&tex, param.curValue.data(), sizeof(gs_texture_t *));
+		device_load_texture(device, tex, param.textureID);
+
+		if (param.nextSampler) {
+			ID3D11SamplerState *state = param.nextSampler->state;
+			device->context->PSSetSamplers(param.textureID, 1,
+						       &state);
+			param.nextSampler = nullptr;
 		}
 	}
 }
