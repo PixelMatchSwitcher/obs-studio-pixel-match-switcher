@@ -18,6 +18,7 @@
 #include "d3d11-subsystem.hpp"
 #include "d3d11-shaderprocessor.hpp"
 
+#include <sstream>
 using namespace std;
 
 static const char *semanticInputNames[] = {"POSITION", "NORMAL",   "COLOR",

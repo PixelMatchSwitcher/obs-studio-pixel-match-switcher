@@ -109,9 +109,6 @@ static inline void effect_result_free(struct gs_effect_result *result)
 	da_free(result->cur_val);
 }
 
-EXPORT void effect_result_parse_property(gs_eresult_t *param,
-					 const char *property);
-
 /* ------------------------------------------------------------------------- */
 
 struct pass_shaderparam {
