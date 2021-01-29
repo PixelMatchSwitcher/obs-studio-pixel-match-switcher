@@ -443,8 +443,6 @@ struct shader_attrib {
 	enum attrib_type type;
 };
 
-struct gs_program;
-
 struct gs_shader {
 	gs_device_t *device;
 	enum gs_shader_type type;
