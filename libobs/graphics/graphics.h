@@ -19,7 +19,6 @@
 
 #include "../util/bmem.h"
 #include "input.h"
-#include <util/darray.h>
 #ifdef __APPLE__
 #include <objc/objc-runtime.h>
 #endif
@@ -352,7 +351,6 @@ EXPORT void gs_shader_set_next_sampler(gs_sparam_t *param,
 				       gs_samplerstate_t *sampler);
 EXPORT void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size);
 EXPORT void gs_shader_get_result(gs_sresult_t *result, struct darray *dst);
-EXPORT unsigned int gs_shader_get_atomic_uint(gs_sparam_t *param);
 #endif
 
 /* ---------------------------------------------------

@@ -19,8 +19,6 @@
 
 #include <graphics/shader-parser.h>
 
-#include <sstream>
-
 struct ShaderParser : shader_parser {
 	inline ShaderParser() { shader_parser_init(this); }
 	inline ~ShaderParser() { shader_parser_free(this); }
