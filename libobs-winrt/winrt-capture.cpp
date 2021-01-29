@@ -186,8 +186,10 @@ struct winrt_capture {
 			}
 
 			if (!texture) {
-				texture = gs_texture_create_gdi(texture_width,
-								texture_height);
+				texture = gs_texture_create(texture_width,
+							    texture_height,
+							    GS_BGRA, 1, NULL,
+							    0);
 			}
 
 			if (client_area) {
@@ -240,6 +242,24 @@ static void winrt_capture_device_loss_release(void *data)
 	capture->item = nullptr;
 }
 
+#ifdef NTDDI_WIN10_FE
+static bool winrt_capture_border_toggle_supported()
+try {
+	return winrt::Windows::Foundation::Metadata::ApiInformation::
+		IsPropertyPresent(
+			L"Windows.Graphics.Capture.GraphicsCaptureSession",
+			L"IsBorderRequired");
+} catch (const winrt::hresult_error &err) {
+	blog(LOG_ERROR, "winrt_capture_border_toggle_supported (0x%08X): %ls",
+	     err.to_abi(), err.message().c_str());
+	return false;
+} catch (...) {
+	blog(LOG_ERROR, "winrt_capture_border_toggle_supported (0x%08X)",
+	     winrt::to_hresult());
+	return false;
+}
+#endif
+
 static void winrt_capture_device_loss_rebuild(void *device_void, void *data)
 {
 	winrt_capture *capture = static_cast<winrt_capture *>(data);
@@ -285,6 +305,17 @@ static void winrt_capture_device_loss_rebuild(void *device_void, void *data)
 				2, capture->last_size);
 	const winrt::Windows::Graphics::Capture::GraphicsCaptureSession session =
 		frame_pool.CreateCaptureSession(item);
+
+#ifdef NTDDI_WIN10_FE
+	if (winrt_capture_border_toggle_supported()) {
+		winrt::Windows::Graphics::Capture::GraphicsCaptureAccess::
+			RequestAccessAsync(
+				winrt::Windows::Graphics::Capture::
+					GraphicsCaptureAccessKind::Borderless)
+				.get();
+		session.IsBorderRequired(false);
+	}
+#endif
 
 	if (winrt_capture_cursor_toggle_supported())
 		session.IsCursorCaptureEnabled(capture->capture_cursor &&
@@ -336,11 +367,15 @@ try {
 		activation_factory.as<IGraphicsCaptureItemInterop>();
 	winrt::Windows::Graphics::Capture::GraphicsCaptureItem item = {nullptr};
 	try {
-		interop_factory->CreateForWindow(
+		hr = interop_factory->CreateForWindow(
 			window,
 			winrt::guid_of<ABI::Windows::Graphics::Capture::
 					       IGraphicsCaptureItem>(),
 			reinterpret_cast<void **>(winrt::put_abi(item)));
+		if (FAILED(hr)) {
+			blog(LOG_ERROR, "CreateForWindow (0x%08X)", hr);
+			return nullptr;
+		}
 	} catch (winrt::hresult_error &err) {
 		blog(LOG_ERROR, "CreateForWindow (0x%08X): %ls", err.to_abi(),
 		     err.message().c_str());
@@ -364,6 +399,17 @@ try {
 				2, size);
 	const winrt::Windows::Graphics::Capture::GraphicsCaptureSession session =
 		frame_pool.CreateCaptureSession(item);
+
+#ifdef NTDDI_WIN10_FE
+	if (winrt_capture_border_toggle_supported()) {
+		winrt::Windows::Graphics::Capture::GraphicsCaptureAccess::
+			RequestAccessAsync(
+				winrt::Windows::Graphics::Capture::
+					GraphicsCaptureAccessKind::Borderless)
+				.get();
+		session.IsBorderRequired(false);
+	}
+#endif
 
 	/* disable cursor capture if possible since ours performs better */
 	const BOOL cursor_toggle_supported =
@@ -447,7 +493,15 @@ static void draw_texture(struct winrt_capture *capture, gs_effect_t *effect)
 	gs_eparam_t *image = gs_effect_get_param_by_name(effect, "image");
 	size_t passes;
 
-	gs_effect_set_texture(image, texture);
+	const bool linear_srgb = gs_get_linear_srgb();
+
+	const bool previous = gs_framebuffer_srgb_enabled();
+	gs_enable_framebuffer_srgb(linear_srgb);
+
+	if (linear_srgb)
+		gs_effect_set_texture_srgb(image, texture);
+	else
+		gs_effect_set_texture(image, texture);
 
 	passes = gs_technique_begin(tech);
 	for (size_t i = 0; i < passes; i++) {
@@ -458,6 +512,8 @@ static void draw_texture(struct winrt_capture *capture, gs_effect_t *effect)
 		}
 	}
 	gs_technique_end(tech);
+
+	gs_enable_framebuffer_srgb(previous);
 }
 
 extern "C" EXPORT BOOL winrt_capture_active(const struct winrt_capture *capture)

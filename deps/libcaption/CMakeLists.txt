@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.12)
 project(libcaption)
 add_definitions(-D__STDC_CONSTANT_MACROS)
 if (WIN32)
@@ -36,6 +36,7 @@ set(CAPTION_HEADERS
 )
 
 add_library(caption STATIC ${CAPTION_SOURCES})
+install_obs_headers("caption/caption.h")
 set_target_properties(caption PROPERTIES
 	FOLDER "deps"
 	POSITION_INDEPENDENT_CODE ON)
