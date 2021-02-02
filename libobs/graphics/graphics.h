@@ -406,6 +406,7 @@ gs_technique_get_pass_by_name(const gs_technique_t *technique,
 			      const char *name);
 
 EXPORT size_t gs_effect_get_num_params(const gs_effect_t *effect);
+EXPORT size_t gs_effect_get_num_results(const gs_effect_t *effect);
 EXPORT gs_eparam_t *gs_effect_get_param_by_idx(const gs_effect_t *effect,
 					       size_t param);
 EXPORT gs_eparam_t *gs_effect_get_param_by_name(const gs_effect_t *effect,

@@ -279,6 +279,11 @@ size_t gs_effect_get_num_params(const gs_effect_t *effect)
 	return effect ? effect->params.num : 0;
 }
 
+size_t gs_effect_get_num_results(const gs_effect_t *effect)
+{
+	return effect ? effect->results.num : 0;
+}
+
 gs_eparam_t *gs_effect_get_param_by_idx(const gs_effect_t *effect, size_t param)
 {
 	if (!effect)
