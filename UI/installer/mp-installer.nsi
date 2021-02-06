@@ -23,8 +23,8 @@ ManifestDPIAware true
 !define APPNAME "OBS Studio with Pixel Match Switcher"
 
 !ifndef APPVERSION
-!define APPVERSION "0.25"
-!define SHORTVERSION "0.25"
+!define APPVERSION "0.26"
+!define SHORTVERSION "0.26"
 !endif
 
 !define APPNAMEANDVERSION "OBS Studio and Pixel Match Switcher ${SHORTVERSION}"
