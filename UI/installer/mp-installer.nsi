@@ -36,16 +36,16 @@ ManifestDPIAware true
 ; Main Install settings
 Name "${APPNAMEANDVERSION}"
 !ifdef INSTALL64
-InstallDir "$PROGRAMFILES64\obs-studio-with-pixel-match-switcher"
+InstallDir "$PROGRAMFILES64\obs-studio-with-pixel-match-switcher-and-obs-live"
 !else
-InstallDir "$PROGRAMFILES32\obs-studio-with-pixel-match-switcher"
+InstallDir "$PROGRAMFILES32\obs-studio-with-pixel-match-switcher-and-obs-live"
 !endif
 InstallDirRegKey HKLM "Software\${APPNAME}" ""
 
 !ifdef INSTALL64
- OutFile "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x64.exe"
+ OutFile "obs-studio-with-pixel-match-switcher-and-obs-live-${SHORTVERSION}.0-x64.exe"
 !else
- OutFile "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x86.exe"
+ OutFile "obs-studio-with-pixel-match-switcher-and-obs-live-${SHORTVERSION}.0-x86.exe"
 !endif
 
 ; Use compression
