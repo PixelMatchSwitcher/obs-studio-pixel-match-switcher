@@ -1,4 +1,4 @@
-name: 'CI Multiplatform Build'
+name: 'CI Multiplatform Build: obs-live'
 
 on:
   push:
