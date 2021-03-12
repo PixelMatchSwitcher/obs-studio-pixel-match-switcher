@@ -20,14 +20,14 @@ ManifestDPIAware true
 !define INSTALL64 true
 
 ; Define your application name
-!define APPNAME "OBS Studio with Pixel Match Switcher"
+!define APPNAME "OBS Studio with Pixel Match Switcher and OBS.Live"
 
 !ifndef APPVERSION
 !define APPVERSION "0.26"
 !define SHORTVERSION "0.26"
 !endif
 
-!define APPNAMEANDVERSION "OBS Studio and Pixel Match Switcher ${SHORTVERSION}"
+!define APPNAMEANDVERSION "OBS Studio and Pixel Match Switcher and OBS.Live ${SHORTVERSION}"
 
 ; Additional script dependencies
 !include WinVer.nsh
