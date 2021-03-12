@@ -6,7 +6,6 @@ on:
       - '**.md'
     branches:
       - master
-      - obs-live
     tags:
       - '*'
   pull_request:
@@ -14,7 +13,6 @@ on:
       - '**.md'
     branches:
       - master
-      - obs-live
 
 env:
   MACOS_CEF_BUILD_VERSION: '4183'
