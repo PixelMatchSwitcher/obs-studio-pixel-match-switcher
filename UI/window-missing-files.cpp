@@ -68,7 +68,7 @@ QWidget *MissingFilesPathItemDelegate::createEditor(
 	};
 
 	QHBoxLayout *layout = new QHBoxLayout();
-	layout->setMargin(0);
+	layout->setContentsMargins(0, 0, 0, 0);
 	layout->setSpacing(0);
 
 	QLineEdit *text = new QLineEdit();
@@ -501,11 +501,11 @@ OBSMissingFiles::OBSMissingFiles(obs_missing_files_t *files, QWidget *parent)
 
 	fileStore = files;
 
-	connect(ui->doneButton, &QPushButton::pressed, this,
+	connect(ui->doneButton, &QPushButton::clicked, this,
 		&OBSMissingFiles::saveFiles);
-	connect(ui->browseButton, &QPushButton::pressed, this,
+	connect(ui->browseButton, &QPushButton::clicked, this,
 		&OBSMissingFiles::browseFolders);
-	connect(ui->cancelButton, &QPushButton::pressed, this,
+	connect(ui->cancelButton, &QPushButton::clicked, this,
 		&OBSMissingFiles::close);
 	connect(filesModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)), this,
 		SLOT(dataChanged()));
@@ -557,7 +557,6 @@ void OBSMissingFiles::saveFiles()
 	}
 
 	QDialog::accept();
-	destroy();
 }
 
 void OBSMissingFiles::browseFolders()

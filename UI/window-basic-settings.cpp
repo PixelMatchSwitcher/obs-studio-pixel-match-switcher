@@ -904,8 +904,8 @@ OBSBasicSettings::OBSBasicSettings(QWidget *parent)
 	channelIndex = ui->channelSetup->currentIndex();
 	sampleRateIndex = ui->sampleRate->currentIndex();
 
-	QRegExp rx("\\d{1,5}x\\d{1,5}");
-	QValidator *validator = new QRegExpValidator(rx, this);
+	QRegularExpression rx("\\d{1,5}x\\d{1,5}");
+	QValidator *validator = new QRegularExpressionValidator(rx, this);
 	ui->baseResolution->lineEdit()->setValidator(validator);
 	ui->outputResolution->lineEdit()->setValidator(validator);
 }
@@ -1563,7 +1563,15 @@ void OBSBasicSettings::LoadResolutionLists()
 
 	for (QScreen *screen : QGuiApplication::screens()) {
 		QSize as = screen->size();
-		addRes(as.width(), as.height());
+		uint32_t as_width = as.width();
+		uint32_t as_height = as.height();
+
+		// Calculate physical screen resolution based on the virtual screen resolution
+		// They might differ if scaling is enabled, e.g. for HiDPI screens
+		as_width = round(as_width * screen->devicePixelRatio());
+		as_height = round(as_height * screen->devicePixelRatio());
+
+		addRes(as_width, as_height);
 	}
 
 	addRes(1920, 1080);

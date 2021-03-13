@@ -396,6 +396,16 @@ if(WIN32)
 			OUTPUT_NAME "obs${_output_suffix}")
 endif()
 
+if (ENABLE_WAYLAND)
+	find_package(Qt5Gui REQUIRED)
+	include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
+
+	set(obs_PLATFORM_LIBRARIES
+		${obs_PLATFORM_LIBRARIES}
+		Qt5::Gui
+		Qt5::GuiPrivate)
+endif()
+
 target_link_libraries(obs
 	libobs
 	Qt5::Widgets
@@ -409,7 +419,6 @@ target_link_libraries(obs
 if (APPLE)
 	target_link_libraries(obs
 			Qt5::MacExtras)
-	set_target_properties(obs PROPERTIES LINK_FLAGS "-pagezero_size 10000 -image_base 100000000")
 endif()
 set_target_properties(obs PROPERTIES FOLDER "frontend")
 
