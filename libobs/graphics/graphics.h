@@ -893,6 +893,8 @@ EXPORT void gs_duplicator_destroy(gs_duplicator_t *duplicator);
 EXPORT bool gs_duplicator_update_frame(gs_duplicator_t *duplicator);
 EXPORT gs_texture_t *gs_duplicator_get_texture(gs_duplicator_t *duplicator);
 
+EXPORT uint32_t gs_get_adapter_count(void);
+
 /** creates a windows GDI-lockable texture */
 EXPORT gs_texture_t *gs_texture_create_gdi(uint32_t width, uint32_t height);
 
@@ -931,6 +933,15 @@ EXPORT gs_stagesurf_t *gs_stagesurface_create_nv12(uint32_t width,
 
 EXPORT void gs_register_loss_callbacks(const struct gs_device_loss *callbacks);
 EXPORT void gs_unregister_loss_callbacks(void *data);
+
+#elif __linux__
+
+EXPORT gs_texture_t *
+gs_texture_create_from_dmabuf(unsigned int width, unsigned int height,
+			      enum gs_color_format color_format,
+			      uint32_t n_planes, const int *fds,
+			      const uint32_t *strides, const uint32_t *offsets,
+			      const uint64_t *modifiers);
 
 #endif
 

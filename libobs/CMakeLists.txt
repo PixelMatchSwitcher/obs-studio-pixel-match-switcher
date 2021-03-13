@@ -39,7 +39,7 @@ if(UNIX)
 		set(HAVE_PULSEAUDIO "0")
 		set(USE_XINPUT "0")
 	endif()
-	find_package(DBus QUIET)
+	find_package(Gio QUIET)
 else()
 	set(HAVE_DBUS "0")
 	set(HAVE_PULSEAUDIO "0")
@@ -187,12 +187,30 @@ elseif(APPLE)
 elseif(UNIX)
 	set(libobs_PLATFORM_SOURCES
 		obs-nix.c
+		obs-nix-platform.c
+		obs-nix-x11.c
 		util/threading-posix.c
 		util/pipe-posix.c
 		util/platform-nix.c)
 
 	set(libobs_PLATFORM_HEADERS
-		util/threading-posix.h)
+		util/threading-posix.h
+		obs-nix-platform.h)
+
+	if(ENABLE_WAYLAND)
+		find_package(Wayland COMPONENTS Client REQUIRED)
+
+		set(libobs_PLATFORM_SOURCES ${libobs_PLATFORM_SOURCES}
+			obs-nix-wayland.c)
+
+		include_directories(
+			${WAYLAND_CLIENT_INCLUDE_DIR})
+		add_definitions(
+			${WAYLAND_DEFINITIONS})
+		set(libobs_PLATFORM_DEPS
+			${libobs_PLATFORM_DEPS}
+			${WAYLAND_CLIENT_LIBRARIES})
+	endif()
 
 	if(HAVE_PULSEAUDIO)
 		set(libobs_audio_monitoring_HEADERS
@@ -206,13 +224,15 @@ elseif(UNIX)
 		set(libobs_audio_monitoring_SOURCES
 			audio-monitoring/null/null-audio-monitoring.c)
 	endif()
-	if(DBUS_FOUND)
+	if(GIO_FOUND)
 		set(libobs_PLATFORM_SOURCES ${libobs_PLATFORM_SOURCES}
 			util/platform-nix-dbus.c)
-		include_directories(${DBUS_INCLUDE_DIRS})
+		include_directories(${GIO_INCLUDE_DIRS})
+		add_definitions(
+			${GIO_DEFINITIONS})
 		set(libobs_PLATFORM_DEPS
 			${libobs_PLATFORM_DEPS}
-			${DBUS_LIBRARIES})
+			${GIO_LIBRARIES})
 	endif()
 
 	include_directories(

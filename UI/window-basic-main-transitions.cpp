@@ -24,6 +24,7 @@
 #include "display-helpers.hpp"
 #include "window-namedialog.hpp"
 #include "menu-button.hpp"
+#include "slider-ignorewheel.hpp"
 #include "qt-wrappers.hpp"
 
 #include "obs-hotkey.h"
@@ -563,7 +564,7 @@ void OBSBasic::AddTransition(QString id)
 	}
 }
 
-void OBSBasic::on_transitionRemove_clicked()
+void OBSBasic::RemoveTransitionClicked()
 {
 	OBSSource tr = GetCurrentTransition();
 
@@ -667,7 +668,7 @@ void OBSBasic::on_transitionProps_clicked()
 
 	action = new QAction(QTStr("Remove"), &menu);
 	connect(action, SIGNAL(triggered()), this,
-		SLOT(on_transitionRemove_clicked()));
+		SLOT(RemoveTransitionClicked()));
 	menu.addAction(action);
 
 	action = new QAction(QTStr("Properties"), &menu);
@@ -752,8 +753,6 @@ void OBSBasic::SetCurrentScene(OBSSource scene, bool force)
 		}
 	}
 
-	UpdateSceneSelection(scene);
-
 	if (scene) {
 		bool userSwitched = (!force && !disableSaving);
 		blog(LOG_INFO, "%s to scene '%s'",
@@ -768,7 +767,7 @@ void OBSBasic::CreateProgramDisplay()
 
 	program->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(program.data(), &QWidget::customContextMenuRequested, this,
-		&OBSBasic::on_program_customContextMenuRequested);
+		&OBSBasic::ProgramViewContextMenuRequested);
 
 	auto displayResize = [this]() {
 		struct obs_video_info ovi;
@@ -834,13 +833,15 @@ void OBSBasic::CreateProgramOptions()
 	mainButtonLayout->addWidget(transitionButton);
 	mainButtonLayout->addWidget(configTransitions);
 
-	tBar = new QSlider(Qt::Horizontal);
+	tBar = new SliderIgnoreScroll(Qt::Horizontal);
 	tBar->setMinimum(0);
 	tBar->setMaximum(T_BAR_PRECISION - 1);
 
 	tBar->setProperty("themeID", "tBarSlider");
 
 	connect(tBar, SIGNAL(sliderMoved(int)), this, SLOT(TBarChanged(int)));
+	connect(tBar, SIGNAL(valueChanged(int)), this,
+		SLOT(on_tbar_position_valueChanged(int)));
 	connect(tBar, SIGNAL(sliderReleased()), this, SLOT(TBarReleased()));
 
 	layout->addStretch(0);
@@ -943,6 +944,8 @@ void OBSBasic::TBarReleased()
 		tBarActive = false;
 		EnableTransitionWidgets(true);
 	}
+
+	tBar->clearFocus();
 }
 
 static bool ValidTBarTransition(OBSSource transition)
@@ -992,6 +995,19 @@ void OBSBasic::TBarChanged(int value)
 				       (float)value / T_BAR_PRECISION_F);
 }
 
+int OBSBasic::GetTbarPosition()
+{
+	return tBar->value();
+}
+
+void OBSBasic::on_tbar_position_valueChanged(int value)
+{
+	if (api) {
+		api->on_event(OBS_FRONTEND_EVENT_TBAR_VALUE_CHANGED);
+	}
+
+	UNUSED_PARAMETER(value);
+}
 void OBSBasic::on_modeSwitch_clicked()
 {
 	SetPreviewProgramMode(!IsPreviewProgramMode());

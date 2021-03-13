@@ -1363,6 +1363,25 @@ gs_texture_t *gs_texture_create(uint32_t width, uint32_t height,
 						       levels, data, flags);
 }
 
+#if __linux__
+
+gs_texture_t *gs_texture_create_from_dmabuf(unsigned int width,
+					    unsigned int height,
+					    enum gs_color_format color_format,
+					    uint32_t n_planes, const int *fds,
+					    const uint32_t *strides,
+					    const uint32_t *offsets,
+					    const uint64_t *modifiers)
+{
+	graphics_t *graphics = thread_graphics;
+
+	return graphics->exports.device_texture_create_from_dmabuf(
+		graphics->device, width, height, color_format, n_planes, fds,
+		strides, offsets, modifiers);
+}
+
+#endif
+
 gs_texture_t *gs_cubetexture_create(uint32_t size,
 				    enum gs_color_format color_format,
 				    uint32_t levels, const uint8_t **data,
@@ -2923,6 +2942,16 @@ bool gs_duplicator_update_frame(gs_duplicator_t *duplicator)
 		return false;
 
 	return thread_graphics->exports.gs_duplicator_update_frame(duplicator);
+}
+
+uint32_t gs_get_adapter_count(void)
+{
+	if (!gs_valid("gs_get_adapter_count"))
+		return 0;
+	if (!thread_graphics->exports.gs_get_adapter_count)
+		return 0;
+
+	return thread_graphics->exports.gs_get_adapter_count();
 }
 
 gs_texture_t *gs_duplicator_get_texture(gs_duplicator_t *duplicator)
