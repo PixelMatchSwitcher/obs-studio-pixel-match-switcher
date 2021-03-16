@@ -41,7 +41,4 @@ public:
 protected:
 	void ReplaceAtomicIncrement(cf_token *&token, std::stringstream &out);
 	bool PeekAndSkipAtomicUint(cf_token *&token);
-
-	static bool SeekUntil(cf_token *&token, const char *str);
-	static bool SeekWhile(cf_token *&token, const char *str);
 };

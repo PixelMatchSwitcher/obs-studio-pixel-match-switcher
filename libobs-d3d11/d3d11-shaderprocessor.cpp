@@ -257,7 +257,7 @@ void ShaderProcessor::BuildString(string &outputString)
 	outputString = finalOutput.str();
 }
 
-bool ShaderProcessor::SeekUntil(cf_token *&token, const char *str)
+static bool SeekUntil(cf_token *&token, const char *str)
 {
 	while (token->type != CFTOKEN_NONE) {
 		if (strref_cmp(&token->str, str) == 0)
@@ -267,7 +267,7 @@ bool ShaderProcessor::SeekUntil(cf_token *&token, const char *str)
 	return false;
 }
 
-bool ShaderProcessor::SeekWhile(cf_token *&token, const char *str)
+static bool SeekWhile(cf_token *&token, const char *str)
 {
 	while (token->type != CFTOKEN_NONE) {
 		if (strref_cmp(&token->str, str) != 0)
