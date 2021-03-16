@@ -520,7 +520,7 @@ static bool init_atomic_buffer(unsigned int *buffer_id, size_t sz,
 		return false;
 
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, *buffer_id);
-	if (!gl_success("glGenBuffers"))
+	if (!gl_success("glBindBuffer"))
 		return false;
 
 	glBufferData(GL_ATOMIC_COUNTER_BUFFER, (GLsizeiptr)sz, NULL,

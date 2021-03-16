@@ -136,7 +136,7 @@ HLSL format.
 
 ---------------------
 
-.. function:: size_t gs_effeect_get_num_results(const gs_effect_t *effect)
+.. function:: size_t gs_effect_get_num_results(const gs_effect_t *effect)
 
    Gets the number of results associated with the effect.
 
