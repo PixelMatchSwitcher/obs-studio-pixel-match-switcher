@@ -110,8 +110,6 @@ static void gl_write_var(struct gl_shader_parser *glsp, struct shader_var *var)
 	char *layout_str;
 
 	if (strcmp(var->type, "atomic_uint") == 0) {
-		glsp->version = max(glsp->version, 460);
-
 		layout_str = bmalloc(64);
 		snprintf(layout_str, 64, "layout (binding = %u, offset = %u) ",
 			 var->atomic_counter_index, 0);
@@ -747,7 +745,6 @@ static void gl_rename_attributes(struct gl_shader_parser *glsp)
 static bool gl_shader_buildstring(struct gl_shader_parser *glsp)
 {
 	struct shader_func *main_func;
-	char *version_str;
 
 	main_func = shader_parser_getfunc(&glsp->parser, "main");
 	if (!main_func) {
@@ -755,13 +752,7 @@ static bool gl_shader_buildstring(struct gl_shader_parser *glsp)
 		return false;
 	}
 
-	{
-		version_str = bmalloc(64);
-		snprintf(version_str, 64, "#version %d\n\n", glsp->version);
-		dstr_copy(&glsp->gl_string, version_str);
-		bfree(version_str);
-	}
-
+	dstr_copy(&glsp->gl_string, "#version 460\n\n");
 	dstr_cat(&glsp->gl_string, "const bool obs_glsl_compile = true;\n\n");
 	dstr_cat(&glsp->gl_string,
 		 "vec4 obs_load_2d(sampler2D s, ivec3 p_lod)\n");
