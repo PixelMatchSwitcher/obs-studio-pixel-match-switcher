@@ -21,6 +21,7 @@
 #include <graphics/vec3.h>
 #include <graphics/matrix3.h>
 #include <graphics/matrix4.h>
+#include <sstream>
 
 void gs_vertex_shader::GetBuffersExpected(
 	const vector<D3D11_INPUT_ELEMENT_DESC> &inputs)
@@ -59,7 +60,12 @@ gs_vertex_shader::gs_vertex_shader(gs_device_t *device, const char *file,
 	BuildConstantBuffer();
 	BuildUavBuffer();
 
-	Compile(outputString.c_str(), file, "vs_5_0", shaderBlob.Assign());
+	std::ostringstream versionOss;
+	versionOss << "vs_" << processor.versionMajor
+		   << "_" << processor.versionMinor;
+
+	Compile(outputString.c_str(), file, versionOss.str().data(),
+		shaderBlob.Assign());
 
 	data.resize(shaderBlob->GetBufferSize());
 	memcpy(&data[0], shaderBlob->GetBufferPointer(), data.size());
@@ -99,7 +105,12 @@ gs_pixel_shader::gs_pixel_shader(gs_device_t *device, const char *file,
 	BuildConstantBuffer();
 	BuildUavBuffer();
 
-	Compile(outputString.c_str(), file, "ps_5_0", shaderBlob.Assign());
+	std::ostringstream versionOss;
+	versionOss << "ps_" << processor.versionMajor
+		   << "_" << processor.versionMinor;
+
+	Compile(outputString.c_str(), file, versionOss.str().data(),
+		shaderBlob.Assign());
 
 	data.resize(shaderBlob->GetBufferSize());
 	memcpy(&data[0], shaderBlob->GetBufferPointer(), data.size());

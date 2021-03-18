@@ -280,6 +280,11 @@ static bool SeekWhile(cf_token *&token, const char *str)
 void ShaderProcessor::ReplaceAtomicIncrement(cf_token *&token,
 					     stringstream &out)
 {
+	if (versionMajor < 5) {
+		versionMajor = 5;
+		versionMinor = 0;
+	}
+
 	SeekUntil(token, "(");
 	token++;
 	SeekWhile(token, " ");
