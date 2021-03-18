@@ -28,6 +28,8 @@ struct ShaderProcessor {
 public:
 	gs_device_t *device;
 	ShaderParser parser;
+	int versionMajor = 4;
+	int versionMinor = 0;
 
 	void BuildInputLayout(vector<D3D11_INPUT_ELEMENT_DESC> &inputs);
 	void BuildParams(vector<gs_shader_param> &params,
