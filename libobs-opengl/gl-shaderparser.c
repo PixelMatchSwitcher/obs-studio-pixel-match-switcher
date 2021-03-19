@@ -18,6 +18,7 @@
 #include "gl-subsystem.h"
 #include "gl-shaderparser.h"
 #include <stdio.h> // for snprintf
+#include <stdlib.h>
 
 static void gl_write_function_contents(struct gl_shader_parser *glsp,
 				       struct cf_token **p_token,
