@@ -5065,6 +5065,10 @@ void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 				SLOT(ScreenshotSelectedSource()));
 		popup.addSeparator();
 
+		popup.addMenu(CreateVisibilityTransitionMenu(true));
+		popup.addMenu(CreateVisibilityTransitionMenu(false));
+		popup.addSeparator();
+
 		action = popup.addAction(QTStr("Interact"), this,
 					 SLOT(on_actionInteract_triggered()));
 
@@ -5075,7 +5079,8 @@ void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 		popup.addAction(QTStr("Properties"), this,
 				SLOT(on_actionSourceProperties_triggered()));
 
-		ui->actionCopyFilters->setEnabled(true);
+		ui->actionCopyFilters->setEnabled(
+			obs_source_filter_count(source) > 0);
 		ui->actionCopySource->setEnabled(true);
 	}
 	ui->actionPasteFilters->setEnabled(copyFiltersString && idx != -1);
