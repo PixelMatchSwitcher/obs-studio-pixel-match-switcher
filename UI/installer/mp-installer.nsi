@@ -20,11 +20,11 @@ ManifestDPIAware true
 !define INSTALL64 true
 
 ; Define your application name
-!define APPNAME "OBS Studio with Pixel Match Switcher"
+!define APPNAME "OBS Studio"
 
 !ifndef APPVERSION
-!define APPVERSION "0.27"
-!define SHORTVERSION "0.27"
+!define APPVERSION "27.1.2"
+!define SHORTVERSION "27.1.2"
 !endif
 
 !define APPNAMEANDVERSION "OBS Studio and Pixel Match Switcher ${SHORTVERSION}"
@@ -36,9 +36,9 @@ ManifestDPIAware true
 ; Main Install settings
 Name "${APPNAMEANDVERSION}"
 !ifdef INSTALL64
-InstallDir "$PROGRAMFILES64\obs-studio-with-pixel-match-switcher"
+InstallDir "$PROGRAMFILES64\obs-studio"
 !else
-InstallDir "$PROGRAMFILES32\obs-studio-with-pixel-match-switcher"
+InstallDir "$PROGRAMFILES32\obs-studio"
 !endif
 InstallDirRegKey HKLM "Software\${APPNAME}" ""
 
@@ -250,9 +250,9 @@ FunctionEnd
 
 Function LaunchOBS
 !ifdef INSTALL64
-	Exec '"$WINDIR\explorer.exe" "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (64bit).lnk"'
+	Exec '"$WINDIR\explorer.exe" "$SMPROGRAMS\OBS Studio\OBS Studio (64bit).lnk"'
 !else
-	Exec '"$WINDIR\explorer.exe" "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (32bit).lnk"'
+	Exec '"$WINDIR\explorer.exe" "$SMPROGRAMS\OBS Studio\OBS Studio (32bit).lnk"'
 !endif
 FunctionEnd
 
@@ -319,24 +319,24 @@ Section "OBS Studio" SecCore
 
 !ifdef INSTALL64
 	SetOutPath "$INSTDIR\bin\64bit"
-	CreateShortCut "$DESKTOP\OBS Studio with Pixel Match Switcher.lnk" "$INSTDIR\bin\64bit\obs64.exe"
+	CreateShortCut "$DESKTOP\OBS Studio (64bit).lnk" "$INSTDIR\bin\64bit\obs64.exe"
 !else
 	SetOutPath "$INSTDIR\bin\32bit"
-	CreateShortCut "$DESKTOP\OBS Studio with Pixel Match Switcher.lnk" "$INSTDIR\bin\32bit\obs32.exe"
+	CreateShortCut "$DESKTOP\OBS Studio (32bit).lnk" "$INSTDIR\bin\32bit\obs32.exe"
 !endif
 
-	CreateDirectory "$SMPROGRAMS\OBS Studio with Pixel Match Switcher"
+	CreateDirectory "$SMPROGRAMS\OBS Studio"
 
 !ifdef INSTALL64
 	SetOutPath "$INSTDIR\bin\64bit"
-	CreateShortCut "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (64bit).lnk" "$INSTDIR\bin\64bit\obs64.exe"
+	CreateShortCut "$SMPROGRAMS\OBS Studio\OBS Studio (64bit).lnk" "$INSTDIR\bin\64bit\obs64.exe"
 !else
 	SetOutPath "$INSTDIR\bin\32bit"
-	CreateDirectory "$SMPROGRAMS\OBS Studio with Pixel Match Switcher"
-	CreateShortCut "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (32bit).lnk" "$INSTDIR\bin\32bit\obs32.exe"
+	CreateDirectory "$SMPROGRAMS\OBS Studio"
+	CreateShortCut "$SMPROGRAMS\OBS Studio\OBS Studio (32bit).lnk" "$INSTDIR\bin\32bit\obs32.exe"
 !endif
 
-	CreateShortCut "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+	CreateShortCut "$SMPROGRAMS\OBS Studio\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
 Section -FinishSection
@@ -436,11 +436,11 @@ Section "un.obs-studio Program Files" UninstallSection1
 	Delete "$INSTDIR\uninstall.exe"
 
 	; Delete Shortcuts
-	Delete "$DESKTOP\OBS Studio with Pixel Match Switcher.lnk"
-	Delete "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (32bit).lnk"
-	Delete "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\Uninstall.lnk"
+	Delete "$DESKTOP\OBS Studio.lnk"
+	Delete "$SMPROGRAMS\OBS Studio\OBS Studio (32bit).lnk"
+	Delete "$SMPROGRAMS\OBS Studio\Uninstall.lnk"
 	${if} ${RunningX64}
-		Delete "$SMPROGRAMS\OBS Studio with Pixel Match Switcher\OBS Studio with Pixel Match Switcher (64bit).lnk"
+		Delete "$SMPROGRAMS\OBS Studio\OBS Studio (64bit).lnk"
 	${endif}
 
 	IfFileExists "$INSTDIR\data\obs-plugins\win-ivcam\seg_service.exe" UnregisterSegService SkipUnreg
@@ -455,12 +455,12 @@ Section "un.obs-studio Program Files" UninstallSection1
 	RMDir "$INSTDIR"
 
 	; Remove remaining directories
-	RMDir "$SMPROGRAMS\OBS Studio with Pixel Match Switcher"
-	RMDir "$INSTDIR\OBS Studio with Pixel Match Switcher"
+	RMDir "$SMPROGRAMS\OBS Studio"
+	RMDir "$INSTDIR\OBS Studio"
 SectionEnd
 
 Section /o "un.User Settings" UninstallSection2
-	RMDir /r "$APPDATA\obs-studio-with-pixel-match-switcher"
+	RMDir /r "$APPDATA\obs-studio"
 SectionEnd
 
 !insertmacro MUI_UNFUNCTION_DESCRIPTION_BEGIN
