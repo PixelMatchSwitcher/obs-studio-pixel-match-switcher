@@ -18,7 +18,6 @@
 #include "gl-subsystem.h"
 #include "gl-shaderparser.h"
 #include <stdio.h> // for snprintf
-#include <stdlib.h>
 
 static void gl_write_function_contents(struct gl_shader_parser *glsp,
 				       struct cf_token **p_token,
@@ -110,8 +109,9 @@ static void gl_write_var(struct gl_shader_parser *glsp, struct shader_var *var)
 {
 	char *layout_str;
 
+	if (glsp->version < 460)
+		glsp->version = 460;
 	if (strcmp(var->type, "atomic_uint") == 0) {
-		glsp->version = max(glsp->version, 460);
 
 		layout_str = bmalloc(64);
 		snprintf(layout_str, 64, "layout (binding = %u, offset = %u) ",
