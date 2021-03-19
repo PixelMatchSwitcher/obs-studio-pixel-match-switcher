@@ -1101,6 +1101,9 @@ EXPORT void obs_source_enum_filters(obs_source_t *source,
 EXPORT obs_source_t *obs_source_get_filter_by_name(obs_source_t *source,
 						   const char *name);
 
+/** Gets the number of filters the source has. */
+EXPORT size_t obs_source_filter_count(const obs_source_t *source);
+
 EXPORT void obs_source_copy_filters(obs_source_t *dst, obs_source_t *src);
 EXPORT void obs_source_copy_single_filter(obs_source_t *dst,
 					  obs_source_t *filter);
@@ -1712,6 +1715,22 @@ EXPORT obs_scene_t *obs_group_from_source(const obs_source_t *source);
 
 EXPORT void obs_sceneitem_defer_group_resize_begin(obs_sceneitem_t *item);
 EXPORT void obs_sceneitem_defer_group_resize_end(obs_sceneitem_t *item);
+
+EXPORT void obs_sceneitem_set_show_transition(obs_sceneitem_t *item,
+					      obs_source_t *transition);
+EXPORT void obs_sceneitem_set_show_transition_duration(obs_sceneitem_t *item,
+						       uint32_t duration_ms);
+EXPORT obs_source_t *obs_sceneitem_get_show_transition(obs_sceneitem_t *item);
+EXPORT uint32_t
+obs_sceneitem_get_show_transition_duration(obs_sceneitem_t *item);
+EXPORT void obs_sceneitem_set_hide_transition(obs_sceneitem_t *item,
+					      obs_source_t *transition);
+EXPORT void obs_sceneitem_set_hide_transition_duration(obs_sceneitem_t *item,
+						       uint32_t duration_ms);
+EXPORT obs_source_t *obs_sceneitem_get_hide_transition(obs_sceneitem_t *item);
+EXPORT uint32_t
+obs_sceneitem_get_hide_transition_duration(obs_sceneitem_t *item);
+EXPORT void obs_sceneitem_do_transition(obs_sceneitem_t *item, bool visible);
 
 /* ------------------------------------------------------------------------- */
 /* Outputs */
