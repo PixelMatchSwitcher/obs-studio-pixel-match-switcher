@@ -300,6 +300,8 @@ Section "OBS Studio" SecCore
 !ifdef INSTALL64
 	SetOutPath "$INSTDIR\bin"
 	File /r "new\core\bin\64bit"
+	SetOutPath "$INSTDIR\bin"
+	File /r "new\core\bin\32bit"
 	SetOutPath "$INSTDIR\obs-plugins"
 	File /r "new\core\obs-plugins\64bit"
 !else
@@ -325,6 +327,7 @@ Section "OBS Studio" SecCore
 !ifdef INSTALL64
 #	File /r "new\obs-browser\obs-plugins\64bit"
 	SetOutPath "$INSTDIR\bin\64bit"
+	SetOutPath "$INSTDIR\bin\32bit"
 !else
 	File /r "new\obs-browser\obs-plugins\32bit"
 	SetOutPath "$INSTDIR\bin\32bit"
@@ -395,8 +398,10 @@ Section -FinishSection
 	# Register virtual camera dlls
 
 	Exec '"$SYSDIR\regsvr32.exe" /s "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module32.dll"'
+  Exec '"$SYSDIR\regsvr32.exe" /s "$INSTDIR\bin\32bit\obs-virtualsource.dll"'
 	${if} ${RunningX64}
 		Exec '"$SYSDIR\regsvr32.exe" /s "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module64.dll"'
+    Exec '"$SYSDIR\regsvr32.exe" /s "$INSTDIR\bin\64bit\obs-virtualsource.dll"'
 	${endif}
 
 	# ---------------------------------------
@@ -448,8 +453,10 @@ Section "un.obs-studio Program Files" UninstallSection1
 
 	; Unregister virtual camera dlls
 	Exec '"$SYSDIR\regsvr32.exe" /u /s "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module32.dll"'
+	Exec '"$SYSDIR\regsvr32.exe" /u /s "$INSTDIR\bin\32bit\obs-virtualsource.dll"'
 	${if} ${RunningX64}
 		Exec '"$SYSDIR\regsvr32.exe" /u /s "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module64.dll"'
+		Exec '"$SYSDIR\regsvr32.exe" /u /s "$INSTDIR\bin\64bit\obs-virtualsource.dll"'
 	${endif}
 
 	; Remove from registry...
