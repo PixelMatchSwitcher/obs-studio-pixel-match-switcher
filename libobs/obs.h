@@ -696,8 +696,11 @@ EXPORT obs_source_t *obs_load_source(obs_data_t *data);
 /** Send a save signal to sources */
 EXPORT void obs_source_save(obs_source_t *source);
 
-/** Send a load signal to sources */
+/** Send a load signal to sources (soft deprecated; does not load filters) */
 EXPORT void obs_source_load(obs_source_t *source);
+
+/** Send a load signal to sources */
+EXPORT void obs_source_load2(obs_source_t *source);
 
 typedef void (*obs_load_source_cb)(void *private_data, obs_source_t *source);
 
@@ -724,6 +727,7 @@ EXPORT enum obs_obj_type obs_obj_get_type(void *obj);
 EXPORT const char *obs_obj_get_id(void *obj);
 EXPORT bool obs_obj_invalid(void *obj);
 EXPORT void *obs_obj_get_data(void *obj);
+EXPORT bool obs_obj_is_private(void *obj);
 
 typedef bool (*obs_enum_audio_device_cb)(void *data, const char *name,
 					 const char *id);
@@ -1031,6 +1035,10 @@ EXPORT void obs_source_enum_active_tree(obs_source_t *source,
 					obs_source_enum_proc_t enum_callback,
 					void *param);
 
+EXPORT void obs_source_enum_full_tree(obs_source_t *source,
+				      obs_source_enum_proc_t enum_callback,
+				      void *param);
+
 /** Returns true if active, false if not */
 EXPORT bool obs_source_active(const obs_source_t *source);
 
@@ -1316,6 +1324,9 @@ obs_source_process_filter_begin(obs_source_t *filter,
 EXPORT void obs_source_process_filter_end(obs_source_t *filter,
 					  gs_effect_t *effect, uint32_t width,
 					  uint32_t height);
+EXPORT void obs_source_process_filter_end_srgb(obs_source_t *filter,
+					       gs_effect_t *effect,
+					       uint32_t width, uint32_t height);
 
 /**
  * Draws the filter with a specific technique.
@@ -1328,6 +1339,11 @@ EXPORT void obs_source_process_filter_tech_end(obs_source_t *filter,
 					       gs_effect_t *effect,
 					       uint32_t width, uint32_t height,
 					       const char *tech_name);
+EXPORT void obs_source_process_filter_tech_end_srgb(obs_source_t *filter,
+						    gs_effect_t *effect,
+						    uint32_t width,
+						    uint32_t height,
+						    const char *tech_name);
 
 /** Skips the filter if the filter is invalid and cannot be rendered */
 EXPORT void obs_source_skip_video_filter(obs_source_t *filter);
@@ -1575,6 +1591,8 @@ obs_scene_reorder_items2(obs_scene_t *scene,
 			 struct obs_sceneitem_order_info *item_order,
 			 size_t item_order_size);
 
+EXPORT bool obs_source_is_scene(const obs_source_t *source);
+
 /** Adds/creates a new scene item for a source */
 EXPORT obs_sceneitem_t *obs_scene_add(obs_scene_t *scene, obs_source_t *source);
 
@@ -1762,6 +1780,10 @@ EXPORT obs_source_t *obs_sceneitem_get_hide_transition(obs_sceneitem_t *item);
 EXPORT uint32_t
 obs_sceneitem_get_hide_transition_duration(obs_sceneitem_t *item);
 EXPORT void obs_sceneitem_do_transition(obs_sceneitem_t *item, bool visible);
+EXPORT void obs_sceneitem_transition_load(struct obs_scene_item *item,
+					  obs_data_t *data, bool show);
+EXPORT obs_data_t *obs_sceneitem_transition_save(struct obs_scene_item *item,
+						 bool show);
 
 /* ------------------------------------------------------------------------- */
 /* Outputs */

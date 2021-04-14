@@ -3725,9 +3725,9 @@ bool obs_source_process_filter_begin(obs_source_t *filter,
 	return true;
 }
 
-void obs_source_process_filter_tech_end(obs_source_t *filter,
-					gs_effect_t *effect, uint32_t width,
-					uint32_t height, const char *tech_name)
+static void obs_source_process_filter_tech_end_internal(
+	obs_source_t *filter, gs_effect_t *effect, uint32_t width,
+	uint32_t height, const char *tech_name, bool linear_srgb)
 {
 	obs_source_t *target, *parent;
 	gs_texture_t *texture;
@@ -3742,6 +3742,8 @@ void obs_source_process_filter_tech_end(obs_source_t *filter,
 	if (!target || !parent)
 		return;
 
+	const bool previous = gs_set_linear_srgb(linear_srgb);
+
 	parent_flags = parent->info.output_flags;
 
 	const char *tech = tech_name ? tech_name : "Draw";
@@ -3754,6 +3756,25 @@ void obs_source_process_filter_tech_end(obs_source_t *filter,
 			render_filter_tex(texture, effect, width, height, tech);
 		}
 	}
+
+	gs_set_linear_srgb(previous);
+}
+
+void obs_source_process_filter_tech_end(obs_source_t *filter,
+					gs_effect_t *effect, uint32_t width,
+					uint32_t height, const char *tech_name)
+{
+	obs_source_process_filter_tech_end_internal(filter, effect, width,
+						    height, tech_name, false);
+}
+
+void obs_source_process_filter_tech_end_srgb(obs_source_t *filter,
+					     gs_effect_t *effect,
+					     uint32_t width, uint32_t height,
+					     const char *tech_name)
+{
+	obs_source_process_filter_tech_end_internal(filter, effect, width,
+						    height, tech_name, true);
 }
 
 void obs_source_process_filter_end(obs_source_t *filter, gs_effect_t *effect,
@@ -3764,6 +3785,17 @@ void obs_source_process_filter_end(obs_source_t *filter, gs_effect_t *effect,
 
 	obs_source_process_filter_tech_end(filter, effect, width, height,
 					   "Draw");
+}
+
+void obs_source_process_filter_end_srgb(obs_source_t *filter,
+					gs_effect_t *effect, uint32_t width,
+					uint32_t height)
+{
+	if (!obs_ptr_valid(filter, "obs_source_process_filter_end_srgb"))
+		return;
+
+	obs_source_process_filter_tech_end_srgb(filter, effect, width, height,
+						"Draw");
 }
 
 void obs_source_skip_video_filter(obs_source_t *filter)
@@ -3971,14 +4003,14 @@ static void enum_source_full_tree_callback(obs_source_t *parent,
 	data->enum_callback(parent, child, data->param);
 }
 
-static void obs_source_enum_full_tree(obs_source_t *source,
-				      obs_source_enum_proc_t enum_callback,
-				      void *param)
+void obs_source_enum_full_tree(obs_source_t *source,
+			       obs_source_enum_proc_t enum_callback,
+			       void *param)
 {
 	struct source_enum_data data = {enum_callback, param};
 	bool is_transition;
 
-	if (!data_valid(source, "obs_source_enum_active_tree"))
+	if (!data_valid(source, "obs_source_enum_full_tree"))
 		return;
 
 	is_transition = source->info.type == OBS_SOURCE_TYPE_TRANSITION;
@@ -4080,6 +4112,19 @@ void obs_source_load(obs_source_t *source)
 				  source->context.settings);
 
 	obs_source_dosignal(source, "source_load", "load");
+}
+
+void obs_source_load2(obs_source_t *source)
+{
+	if (!data_valid(source, "obs_source_load2"))
+		return;
+
+	obs_source_load(source);
+
+	for (size_t i = source->filters.num; i > 0; i--) {
+		obs_source_t *filter = source->filters.array[i - 1];
+		obs_source_load(filter);
+	}
 }
 
 bool obs_source_active(const obs_source_t *source)
