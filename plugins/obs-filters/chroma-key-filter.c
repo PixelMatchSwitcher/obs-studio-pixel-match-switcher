@@ -191,7 +191,7 @@ chroma_settings_update_v2(struct chroma_key_filter_data_v2 *filter,
 	else if (strcmp(key_type, "magenta") == 0)
 		key_color = 0xFF00FF;
 
-	vec4_from_rgba_srgb(&key_rgb, key_color | 0xFF000000);
+	vec4_from_rgba(&key_rgb, key_color | 0xFF000000);
 
 	memcpy(&cb_v4, cb_vec, sizeof(cb_v4));
 	memcpy(&cr_v4, cr_vec, sizeof(cr_v4));
@@ -388,9 +388,8 @@ static void chroma_key_render_v2(void *data, gs_effect_t *effect)
 	gs_effect_set_float(filter->smoothness_param, filter->smoothness);
 	gs_effect_set_float(filter->spill_param, filter->spill);
 
-	const bool previous = gs_set_linear_srgb(true);
-	obs_source_process_filter_end(filter->context, filter->effect, 0, 0);
-	gs_set_linear_srgb(previous);
+	obs_source_process_filter_end_srgb(filter->context, filter->effect, 0,
+					   0);
 
 	UNUSED_PARAMETER(effect);
 }
