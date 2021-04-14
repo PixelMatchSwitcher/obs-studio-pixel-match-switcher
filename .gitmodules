@@ -22,6 +22,3 @@
 [submodule "plugins/obs-move-transition"]
 	path = plugins/obs-move-transition
 	url = https://github.com/exeldro/obs-move-transition.git
-[submodule "UI/frontend-plugins/obs-websocket"]
-	path = UI/frontend-plugins/obs-websocket
-	url = https://github.com/Palakis/obs-websocket.git
