@@ -42,11 +42,15 @@ InstallDir "$PROGRAMFILES32\obs-studio"
 !endif
 InstallDirRegKey HKLM "Software\${APPNAME}" ""
 
-!ifdef INSTALL64
- OutFile "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x64.exe"
-!else
- OutFile "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x86.exe"
+!ifndef OUTFILE
+ !ifdef INSTALL64
+  !define OUTFILE "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x64.exe"
+ !else
+  !define OUTFILE "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x86.exe"
+ !endif
 !endif
+
+OutFile "${OUTFILE}"
 
 ; Use compression
 SetCompressor /SOLID LZMA
@@ -300,8 +304,6 @@ Section "OBS Studio" SecCore
 !ifdef INSTALL64
 	SetOutPath "$INSTDIR\bin"
 	File /r "new\core\bin\64bit"
-	SetOutPath "$INSTDIR\bin"
-	File /r "new\core\bin\32bit"
 	SetOutPath "$INSTDIR\obs-plugins"
 	File /r "new\core\obs-plugins\64bit"
 !else
@@ -397,12 +399,7 @@ Section -FinishSection
 	# ---------------------------------------
 	# Register virtual camera dlls
 
-	Exec '"$SYSDIR\regsvr32.exe" /s "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module32.dll"'
-  Exec '"$SYSDIR\regsvr32.exe" /s "$INSTDIR\bin\32bit\obs-virtualsource.dll"'
-	${if} ${RunningX64}
-		Exec '"$SYSDIR\regsvr32.exe" /s "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module64.dll"'
-    Exec '"$SYSDIR\regsvr32.exe" /s "$INSTDIR\bin\64bit\obs-virtualsource.dll"'
-	${endif}
+	Exec '"$INSTDIR\data\obs-plugins\win-dshow\virtualcam-install.bat"'
 
 	# ---------------------------------------
 
@@ -452,12 +449,7 @@ Section "un.obs-studio Program Files" UninstallSection1
 	ClearErrors
 
 	; Unregister virtual camera dlls
-	Exec '"$SYSDIR\regsvr32.exe" /u /s "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module32.dll"'
-	Exec '"$SYSDIR\regsvr32.exe" /u /s "$INSTDIR\bin\32bit\obs-virtualsource.dll"'
-	${if} ${RunningX64}
-		Exec '"$SYSDIR\regsvr32.exe" /u /s "$INSTDIR\data\obs-plugins\win-dshow\obs-virtualcam-module64.dll"'
-		Exec '"$SYSDIR\regsvr32.exe" /u /s "$INSTDIR\bin\64bit\obs-virtualsource.dll"'
-	${endif}
+	Exec '"$INSTDIR\data\obs-plugins\win-dshow\virtualcam-uninstall.bat"'
 
 	; Remove from registry...
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
