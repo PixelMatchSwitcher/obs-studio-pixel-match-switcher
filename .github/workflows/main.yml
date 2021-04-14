@@ -423,6 +423,7 @@ jobs:
            python3-dev \
            qtbase5-dev \
            qtbase5-private-dev \
+           libqt5x11extras5-dev \
            libqt5svg5-dev \
            swig \
            libcmocka-dev \
