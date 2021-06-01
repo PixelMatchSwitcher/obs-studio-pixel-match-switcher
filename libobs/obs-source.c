@@ -846,7 +846,7 @@ obs_properties_t *obs_get_source_properties(const char *id)
 
 obs_missing_files_t *obs_source_get_missing_files(const obs_source_t *source)
 {
-	if (!obs_source_valid(source, "obs_source_get_missing_files"))
+	if (!data_valid(source, "obs_source_get_missing_files"))
 		return obs_missing_files_create();
 
 	if (source->info.missing_files) {
@@ -860,7 +860,7 @@ void obs_source_replace_missing_file(obs_missing_file_cb cb,
 				     obs_source_t *source, const char *new_path,
 				     void *data)
 {
-	if (!obs_source_valid(source, "obs_source_replace_missing_file"))
+	if (!data_valid(source, "obs_source_replace_missing_file"))
 		return;
 
 	cb(source->context.data, new_path, data);
@@ -939,6 +939,15 @@ void obs_source_update(obs_source_t *source, obs_data_t *settings)
 		source->info.update(source->context.data,
 				    source->context.settings);
 	}
+}
+
+void obs_source_reset_settings(obs_source_t *source, obs_data_t *settings)
+{
+	if (!obs_source_valid(source, "obs_source_reset_settings"))
+		return;
+
+	obs_data_clear(source->context.settings);
+	obs_source_update(source, settings);
 }
 
 void obs_source_update_properties(obs_source_t *source)
@@ -2056,16 +2065,29 @@ static void obs_source_draw_async_texture(struct obs_source *source)
 {
 	gs_effect_t *effect = gs_get_effect();
 	bool def_draw = (!effect);
+	bool premultiplied = false;
 	gs_technique_t *tech = NULL;
 
 	if (def_draw) {
 		effect = obs_get_base_effect(OBS_EFFECT_DEFAULT);
-		tech = gs_effect_get_technique(effect, "Draw");
+		const bool linear = gs_get_linear_srgb();
+		const char *tech_name = linear ? "DrawNonlinearAlpha" : "Draw";
+		premultiplied = linear;
+		tech = gs_effect_get_technique(effect, tech_name);
 		gs_technique_begin(tech);
 		gs_technique_begin_pass(tech, 0);
 	}
 
+	if (premultiplied) {
+		gs_blend_state_push();
+		gs_blend_function(GS_BLEND_ONE, GS_BLEND_INVSRCALPHA);
+	}
+
 	obs_source_draw_texture(source, effect);
+
+	if (premultiplied) {
+		gs_blend_state_pop();
+	}
 
 	if (def_draw) {
 		gs_technique_end_pass(tech);
@@ -2199,14 +2221,24 @@ static inline void obs_source_main_render(obs_source_t *source)
 {
 	uint32_t flags = source->info.output_flags;
 	bool custom_draw = (flags & OBS_SOURCE_CUSTOM_DRAW) != 0;
+	bool srgb_aware = (flags & OBS_SOURCE_SRGB) != 0;
 	bool default_effect = !source->filter_parent &&
 			      source->filters.num == 0 && !custom_draw;
+	bool previous_srgb = false;
+
+	if (!srgb_aware) {
+		previous_srgb = gs_get_linear_srgb();
+		gs_set_linear_srgb(false);
+	}
 
 	if (default_effect)
 		obs_source_default_render(source);
 	else if (source->context.data)
 		source->info.video_render(source->context.data,
 					  custom_draw ? NULL : gs_get_effect());
+
+	if (!srgb_aware)
+		gs_set_linear_srgb(previous_srgb);
 }
 
 static bool ready_async_frame(obs_source_t *source, uint64_t sys_time);
@@ -3644,13 +3676,15 @@ static inline void render_filter_tex(gs_texture_t *tex, gs_effect_t *effect,
 }
 
 static inline bool can_bypass(obs_source_t *target, obs_source_t *parent,
-			      uint32_t parent_flags,
+			      uint32_t filter_flags, uint32_t parent_flags,
 			      enum obs_allow_direct_render allow_direct)
 {
 	return (target == parent) &&
 	       (allow_direct == OBS_ALLOW_DIRECT_RENDERING) &&
 	       ((parent_flags & OBS_SOURCE_CUSTOM_DRAW) == 0) &&
-	       ((parent_flags & OBS_SOURCE_ASYNC) == 0);
+	       ((parent_flags & OBS_SOURCE_ASYNC) == 0) &&
+	       ((filter_flags & OBS_SOURCE_SRGB) ==
+		(parent_flags & OBS_SOURCE_SRGB));
 }
 
 bool obs_source_process_filter_begin(obs_source_t *filter,
@@ -3658,7 +3692,7 @@ bool obs_source_process_filter_begin(obs_source_t *filter,
 				     enum obs_allow_direct_render allow_direct)
 {
 	obs_source_t *target, *parent;
-	uint32_t parent_flags;
+	uint32_t filter_flags, parent_flags;
 	int cx, cy;
 
 	if (!obs_ptr_valid(filter, "obs_source_process_filter_begin"))
@@ -3678,6 +3712,7 @@ bool obs_source_process_filter_begin(obs_source_t *filter,
 		return false;
 	}
 
+	filter_flags = filter->info.output_flags;
 	parent_flags = parent->info.output_flags;
 	cx = get_base_width(target);
 	cy = get_base_height(target);
@@ -3688,7 +3723,8 @@ bool obs_source_process_filter_begin(obs_source_t *filter,
 	 * filter in the chain for the parent, then render the parent directly
 	 * using the filter effect instead of rendering to texture to reduce
 	 * the total number of passes */
-	if (can_bypass(target, parent, parent_flags, allow_direct)) {
+	if (can_bypass(target, parent, filter_flags, parent_flags,
+		       allow_direct)) {
 		return true;
 	}
 
@@ -3701,10 +3737,12 @@ bool obs_source_process_filter_begin(obs_source_t *filter,
 		filter->filter_texrender =
 			gs_texrender_create(format, GS_ZS_NONE);
 
-	gs_blend_state_push();
-	gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
-
 	if (gs_texrender_begin(filter->filter_texrender, cx, cy)) {
+		gs_blend_state_push();
+		gs_blend_function_separate(GS_BLEND_SRCALPHA,
+					   GS_BLEND_INVSRCALPHA, GS_BLEND_ONE,
+					   GS_BLEND_INVSRCALPHA);
+
 		bool custom_draw = (parent_flags & OBS_SOURCE_CUSTOM_DRAW) != 0;
 		bool async = (parent_flags & OBS_SOURCE_ASYNC) != 0;
 		struct vec4 clear_color;
@@ -3718,20 +3756,20 @@ bool obs_source_process_filter_begin(obs_source_t *filter,
 		else
 			obs_source_video_render(target);
 
+		gs_blend_state_pop();
+
 		gs_texrender_end(filter->filter_texrender);
 	}
-
-	gs_blend_state_pop();
 	return true;
 }
 
-static void obs_source_process_filter_tech_end_internal(
-	obs_source_t *filter, gs_effect_t *effect, uint32_t width,
-	uint32_t height, const char *tech_name, bool linear_srgb)
+void obs_source_process_filter_tech_end(obs_source_t *filter,
+					gs_effect_t *effect, uint32_t width,
+					uint32_t height, const char *tech_name)
 {
 	obs_source_t *target, *parent;
 	gs_texture_t *texture;
-	uint32_t parent_flags;
+	uint32_t filter_flags, parent_flags;
 
 	if (!filter)
 		return;
@@ -3742,13 +3780,16 @@ static void obs_source_process_filter_tech_end_internal(
 	if (!target || !parent)
 		return;
 
-	const bool previous = gs_set_linear_srgb(linear_srgb);
-
+	filter_flags = filter->info.output_flags;
 	parent_flags = parent->info.output_flags;
+
+	const bool previous =
+		gs_set_linear_srgb((filter_flags & OBS_SOURCE_SRGB) != 0);
 
 	const char *tech = tech_name ? tech_name : "Draw";
 
-	if (can_bypass(target, parent, parent_flags, filter->allow_direct)) {
+	if (can_bypass(target, parent, filter_flags, parent_flags,
+		       filter->allow_direct)) {
 		render_filter_bypass(target, effect, tech);
 	} else {
 		texture = gs_texrender_get_texture(filter->filter_texrender);
@@ -3760,23 +3801,6 @@ static void obs_source_process_filter_tech_end_internal(
 	gs_set_linear_srgb(previous);
 }
 
-void obs_source_process_filter_tech_end(obs_source_t *filter,
-					gs_effect_t *effect, uint32_t width,
-					uint32_t height, const char *tech_name)
-{
-	obs_source_process_filter_tech_end_internal(filter, effect, width,
-						    height, tech_name, false);
-}
-
-void obs_source_process_filter_tech_end_srgb(obs_source_t *filter,
-					     gs_effect_t *effect,
-					     uint32_t width, uint32_t height,
-					     const char *tech_name)
-{
-	obs_source_process_filter_tech_end_internal(filter, effect, width,
-						    height, tech_name, true);
-}
-
 void obs_source_process_filter_end(obs_source_t *filter, gs_effect_t *effect,
 				   uint32_t width, uint32_t height)
 {
@@ -3785,17 +3809,6 @@ void obs_source_process_filter_end(obs_source_t *filter, gs_effect_t *effect,
 
 	obs_source_process_filter_tech_end(filter, effect, width, height,
 					   "Draw");
-}
-
-void obs_source_process_filter_end_srgb(obs_source_t *filter,
-					gs_effect_t *effect, uint32_t width,
-					uint32_t height)
-{
-	if (!obs_ptr_valid(filter, "obs_source_process_filter_end_srgb"))
-		return;
-
-	obs_source_process_filter_tech_end_srgb(filter, effect, width, height,
-						"Draw");
 }
 
 void obs_source_skip_video_filter(obs_source_t *filter)
@@ -5229,4 +5242,99 @@ void obs_source_media_ended(obs_source_t *source)
 		return;
 
 	obs_source_dosignal(source, NULL, "media_ended");
+}
+
+obs_data_array_t *obs_source_backup_filters(obs_source_t *source)
+{
+	if (!obs_source_valid(source, "obs_source_backup_filters"))
+		return NULL;
+
+	obs_data_array_t *array = obs_data_array_create();
+
+	pthread_mutex_lock(&source->filter_mutex);
+	for (size_t i = 0; i < source->filters.num; i++) {
+		struct obs_source *filter = source->filters.array[i];
+		obs_data_t *data = obs_save_source(filter);
+		obs_data_array_push_back(array, data);
+		obs_data_release(data);
+	}
+	pthread_mutex_unlock(&source->filter_mutex);
+
+	return array;
+}
+
+void obs_source_restore_filters(obs_source_t *source, obs_data_array_t *array)
+{
+	if (!obs_source_valid(source, "obs_source_restore_filters"))
+		return;
+	if (!obs_ptr_valid(array, "obs_source_restore_filters"))
+		return;
+
+	DARRAY(obs_source_t *) cur_filters;
+	DARRAY(obs_source_t *) new_filters;
+	obs_source_t *prev = NULL;
+
+	da_init(cur_filters);
+	da_init(new_filters);
+
+	pthread_mutex_lock(&source->filter_mutex);
+
+	/* clear filter list */
+	da_reserve(cur_filters, source->filters.num);
+	da_reserve(new_filters, source->filters.num);
+	for (size_t i = 0; i < source->filters.num; i++) {
+		obs_source_t *filter = source->filters.array[i];
+		da_push_back(cur_filters, &filter);
+		filter->filter_parent = NULL;
+		filter->filter_target = NULL;
+	}
+
+	da_free(source->filters);
+	pthread_mutex_unlock(&source->filter_mutex);
+
+	/* add backed up filters */
+	size_t count = obs_data_array_count(array);
+	for (size_t i = 0; i < count; i++) {
+		obs_data_t *data = obs_data_array_item(array, i);
+		const char *name = obs_data_get_string(data, "name");
+		obs_source_t *filter = NULL;
+
+		/* if backed up filter already exists, don't create */
+		for (size_t j = 0; j < cur_filters.num; j++) {
+			obs_source_t *cur = cur_filters.array[j];
+			const char *cur_name = cur->context.name;
+			if (cur_name && strcmp(cur_name, name) == 0) {
+				filter = cur;
+				obs_source_addref(cur);
+				break;
+			}
+		}
+
+		if (!filter)
+			filter = obs_load_source(data);
+
+		/* add filter */
+		if (prev)
+			prev->filter_target = filter;
+		prev = filter;
+		filter->filter_parent = source;
+		da_push_back(new_filters, &filter);
+
+		obs_data_release(data);
+	}
+
+	if (prev)
+		prev->filter_target = source;
+
+	pthread_mutex_lock(&source->filter_mutex);
+	da_move(source->filters, new_filters);
+	pthread_mutex_unlock(&source->filter_mutex);
+
+	/* release filters */
+	for (size_t i = 0; i < cur_filters.num; i++) {
+		obs_source_t *filter = cur_filters.array[i];
+		obs_source_release(filter);
+	}
+
+	da_free(cur_filters);
 }

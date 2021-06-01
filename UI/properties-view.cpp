@@ -393,6 +393,14 @@ void OBSPropertiesView::AddFloat(obs_property_t *prop, QFormLayout *layout,
 	double stepVal = obs_property_float_step(prop);
 	const char *suffix = obs_property_float_suffix(prop);
 
+	if (stepVal < 1.0) {
+		int decimals = (int)(log10(1.0 / stepVal) + 0.99);
+		constexpr int sane_limit = 8;
+		decimals = std::min(decimals, sane_limit);
+		if (decimals > spin->decimals())
+			spin->setDecimals(decimals);
+	}
+
 	spin->setMinimum(minVal);
 	spin->setMaximum(maxVal);
 	spin->setSingleStep(stepVal);
