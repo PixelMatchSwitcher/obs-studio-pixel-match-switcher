@@ -415,10 +415,8 @@ void OBSBasic::TransitionToScene(OBSSource source, bool force,
 		}
 
 		if (black && !prevFTBSource) {
+			prevFTBSource = source;
 			source = nullptr;
-			prevFTBSource =
-				obs_transition_get_active_source(transition);
-			obs_source_release(prevFTBSource);
 		} else if (black && prevFTBSource) {
 			source = prevFTBSource;
 			prevFTBSource = nullptr;
@@ -1236,8 +1234,7 @@ QMenu *OBSBasic::CreateVisibilityTransitionMenu(bool visible)
 					.arg(obs_source_get_name(
 						obs_sceneitem_get_source(
 							sceneItem))),
-				undo_redo, undo_redo, undo_data, redo_data,
-				NULL);
+				undo_redo, undo_redo, undo_data, redo_data);
 		obs_data_release(newTransitionData);
 		obs_data_release(oldTransitionData);
 	};
@@ -1559,6 +1556,14 @@ void OBSBasic::EnableTransitionWidgets(bool enable)
 {
 	ui->transitions->setEnabled(enable);
 
+	if (!enable) {
+		ui->transitionProps->setEnabled(false);
+	} else {
+		bool configurable =
+			obs_source_configurable(GetCurrentTransition());
+		ui->transitionProps->setEnabled(configurable);
+	}
+
 	if (!IsPreviewProgramMode())
 		return;
 
@@ -1684,6 +1689,7 @@ void OBSBasic::SetPreviewProgramMode(bool enabled)
 
 		programScene = nullptr;
 		swapScene = nullptr;
+		prevFTBSource = nullptr;
 
 		for (QuickTransition &qt : quickTransitions)
 			qt.button = nullptr;

@@ -325,8 +325,7 @@ static void color_correction_filter_update_v2(void *data, obs_data_t *settings)
 		(float)obs_data_get_double(settings, SETTING_HUESHIFT);
 
 	/* Build our Transparency number. */
-	float opacity =
-		(float)obs_data_get_int(settings, SETTING_OPACITY) * 0.01f;
+	float opacity = (float)obs_data_get_double(settings, SETTING_OPACITY);
 
 	/* Hue is the radian of 0 to 360 degrees. */
 	float half_angle = 0.5f * (float)(hue_shift / (180.0f / M_PI));
@@ -588,7 +587,12 @@ static void color_correction_filter_render_v1(void *data, gs_effect_t *effect)
 	gs_effect_set_matrix4(filter->final_matrix_param,
 			      &filter->final_matrix);
 
+	gs_blend_state_push();
+	gs_blend_function(GS_BLEND_ONE, GS_BLEND_INVSRCALPHA);
+
 	obs_source_process_filter_end(filter->context, filter->effect, 0, 0);
+
+	gs_blend_state_pop();
 
 	UNUSED_PARAMETER(effect);
 }
@@ -606,8 +610,12 @@ static void color_correction_filter_render_v2(void *data, gs_effect_t *effect)
 	gs_effect_set_matrix4(filter->final_matrix_param,
 			      &filter->final_matrix);
 
-	obs_source_process_filter_end_srgb(filter->context, filter->effect, 0,
-					   0);
+	gs_blend_state_push();
+	gs_blend_function(GS_BLEND_ONE, GS_BLEND_INVSRCALPHA);
+
+	obs_source_process_filter_end(filter->context, filter->effect, 0, 0);
+
+	gs_blend_state_pop();
 
 	UNUSED_PARAMETER(effect);
 }
@@ -652,13 +660,13 @@ static obs_properties_t *color_correction_filter_properties_v2(void *data)
 	obs_properties_add_float_slider(props, SETTING_CONTRAST, TEXT_CONTRAST,
 					-4.0, 4.0, 0.01);
 	obs_properties_add_float_slider(props, SETTING_BRIGHTNESS,
-					TEXT_BRIGHTNESS, -1.0, 1.0, 0.01);
+					TEXT_BRIGHTNESS, -1.0, 1.0, 0.0001);
 	obs_properties_add_float_slider(props, SETTING_SATURATION,
 					TEXT_SATURATION, -1.0, 5.0, 0.01);
 	obs_properties_add_float_slider(props, SETTING_HUESHIFT, TEXT_HUESHIFT,
 					-180.0, 180.0, 0.01);
-	obs_properties_add_int_slider(props, SETTING_OPACITY, TEXT_OPACITY, 0,
-				      100, 1);
+	obs_properties_add_float_slider(props, SETTING_OPACITY, TEXT_OPACITY,
+					0.0, 1.0, 0.0001);
 
 	obs_properties_add_color(props, SETTING_COLOR_MULTIPLY,
 				 TEXT_COLOR_MULTIPLY);
@@ -693,7 +701,7 @@ static void color_correction_filter_defaults_v2(obs_data_t *settings)
 	obs_data_set_default_double(settings, SETTING_BRIGHTNESS, 0.0);
 	obs_data_set_default_double(settings, SETTING_SATURATION, 0.0);
 	obs_data_set_default_double(settings, SETTING_HUESHIFT, 0.0);
-	obs_data_set_default_int(settings, SETTING_OPACITY, 100);
+	obs_data_set_default_double(settings, SETTING_OPACITY, 1.0);
 	obs_data_set_default_int(settings, SETTING_COLOR_MULTIPLY, 0x00FFFFFF);
 	obs_data_set_default_int(settings, SETTING_COLOR_ADD, 0x00000000);
 }
@@ -725,7 +733,7 @@ struct obs_source_info color_filter_v2 = {
 	.id = "color_filter",
 	.version = 2,
 	.type = OBS_SOURCE_TYPE_FILTER,
-	.output_flags = OBS_SOURCE_VIDEO,
+	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_SRGB,
 	.get_name = color_correction_filter_name,
 	.create = color_correction_filter_create_v2,
 	.destroy = color_correction_filter_destroy_v2,
