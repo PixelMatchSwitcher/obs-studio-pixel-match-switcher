@@ -26,8 +26,9 @@ ManifestDPIAware true
 !define APPVERSION "27.0.1"
 !define SHORTVERSION "27.0.1"
 !endif
+!define PMVERSION "0.31"
 
-!define APPNAMEANDVERSION "OBS Studio ${SHORTVERSION} with Pixel Match Switcher 0.31"
+!define APPNAMEANDVERSION "OBS Studio ${SHORTVERSION} with Pixel Match Switcher ${PMVERSION}"
 
 ; Additional script dependencies
 !include WinVer.nsh
@@ -44,9 +45,9 @@ InstallDirRegKey HKLM "Software\${APPNAME}" ""
 
 !ifndef OUTFILE
  !ifdef INSTALL64
-  !define OUTFILE "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x64.exe"
+  !define OUTFILE "obs-studio-with-pixel-match-switcher-${PMVERSION}.0-x64.exe"
  !else
-  !define OUTFILE "obs-studio-with-pixel-match-switcher-${SHORTVERSION}.0-x86.exe"
+  !define OUTFILE "obs-studio-with-pixel-match-switcher-${PMVERSION}.0-x86.exe"
  !endif
 !endif
 
